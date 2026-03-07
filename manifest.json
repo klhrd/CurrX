@@ -1,0 +1,17 @@
+{
+  "name": "CurrX 貨幣計算機",
+  "short_name": "CurrX",
+  "description": "極簡、美觀且強大的匯率計算機",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2454/2454282.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

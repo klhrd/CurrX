@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匯率 API 三路並行測試版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .api-card { transition: all 0.3s ease; }
+        .api-card.loading { opacity: 0.6; filter: grayscale(1); }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-black text-slate-800 mb-2">🚀 API 效能對比測試儀</h1>
+            <p class="text-slate-500">同時測試三個匯率來源，觀察速度與準確度差異</p>
+        </header>
+
+        <!-- 全域控制項 -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-wrap items-end gap-4 justify-center">
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-400 uppercase">測試金額 (USD)</label>
+                <input type="number" id="testAmount" value="1" class="block w-32 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <button onclick="testAllApis()" id="runAllBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center gap-2">
+                <span>啟動並行測試</span>
+            </button>
+            <button onclick="clearLogs()" class="p-3 text-slate-400 hover:text-slate-600">
+                重置
+            </button>
+        </div>
+
+        <!-- 測試結果卡片區 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- 來源 1 -->
+            <div id="card-frankfurter" class="api-card bg-white rounded-2xl p-6 shadow-sm border-t-4 border-blue-500">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="font-bold text-slate-700">Frankfurter</h3>
+                    <span class="status-badge px-2 py-1 rounded text-[10px] font-bold bg-slate-100">等待中</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="text-3xl font-mono font-bold text-slate-800 rate-display">--</div>
+                    <div class="text-xs text-slate-400">響應耗時: <span class="time-display">--</span></div>
+                    <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div class="progress-bar h-full bg-blue-500 w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 來源 2 -->
+            <div id="card-exchangerate" class="api-card bg-white rounded-2xl p-6 shadow-sm border-t-4 border-indigo-500">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="font-bold text-slate-700">ExchangeRate</h3>
+                    <span class="status-badge px-2 py-1 rounded text-[10px] font-bold bg-slate-100">等待中</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="text-3xl font-mono font-bold text-slate-800 rate-display">--</div>
+                    <div class="text-xs text-slate-400">響應耗時: <span class="time-display">--</span></div>
+                    <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div class="progress-bar h-full bg-indigo-500 w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 來源 3 -->
+            <div id="card-fawazahmed" class="api-card bg-white rounded-2xl p-6 shadow-sm border-t-4 border-emerald-500">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="font-bold text-slate-700">Fawazahmed0</h3>
+                    <span class="status-badge px-2 py-1 rounded text-[10px] font-bold bg-slate-100">等待中</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="text-3xl font-mono font-bold text-slate-800 rate-display">--</div>
+                    <div class="text-xs text-slate-400">響應耗時: <span class="time-display">--</span></div>
+                    <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div class="progress-bar h-full bg-emerald-500 w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug 日誌 -->
+        <div class="bg-slate-900 rounded-2xl p-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-2 px-2">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">系統開發日誌 (Console)</span>
+                <span id="globalTimer" class="text-[10px] font-mono text-blue-400"></span>
+            </div>
+            <div id="consoleLog" class="h-48 overflow-y-auto font-mono text-[12px] p-2 space-y-1">
+                <div class="text-slate-500">> 準備緒，點擊按鈕開始三路並行測試...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_CONFIGS = {
+            frankfurter: {
+                url: 'https://api.frankfurter.app/latest?from=USD&to=TWD',
+                getPath: (data) => data?.rates?.TWD
+            },
+            exchangerate: {
+                url: 'https://open.er-api.com/v6/latest/USD',
+                getPath: (data) => data?.rates?.TWD
+            },
+            fawazahmed: {
+                url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
+                getPath: (data) => data?.usd?.twd
+            }
+        };
+
+        function log(msg, type = 'info') {
+            const colors = { info: 'text-slate-400', success: 'text-emerald-400', error: 'text-rose-400', warning: 'text-amber-400' };
+            const consoleLog = document.getElementById('consoleLog');
+            consoleLog.innerHTML += `<div class="${colors[type]}">> [${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('consoleLog').innerHTML = '';
+            location.reload();
+        }
+
+        async function fetchSingle(id) {
+            const config = API_CONFIGS[id];
+            const card = document.getElementById(`card-${id}`);
+            const rateDisplay = card.querySelector('.rate-display');
+            const timeDisplay = card.querySelector('.time-display');
+            const statusBadge = card.querySelector('.status-badge');
+            const progress = card.querySelector('.progress-bar');
+
+            const startTime = performance.now();
+            
+            // 更新 UI 狀態
+            card.classList.add('loading');
+            statusBadge.innerText = '請求中...';
+            statusBadge.className = 'status-badge px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-600';
+            progress.style.width = '30%';
+
+            try {
+                const response = await fetch(config.url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                const rate = config.getPath(data);
+                
+                if (rate === undefined) throw new Error('結構解析失敗');
+
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                // 成功 UI
+                rateDisplay.innerText = rate.toFixed(4);
+                timeDisplay.innerText = `${duration} ms`;
+                statusBadge.innerText = '成功';
+                statusBadge.className = 'status-badge px-2 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-600';
+                progress.style.width = '100%';
+                card.classList.remove('loading');
+                
+                log(`${id} 測試完成: ${rate} (耗時 ${duration}ms)`, 'success');
+                return { id, duration, rate };
+
+            } catch (err) {
+                const endTime = performance.now();
+                rateDisplay.innerText = 'ERR';
+                timeDisplay.innerText = `${Math.round(endTime - startTime)} ms`;
+                statusBadge.innerText = '失敗';
+                statusBadge.className = 'status-badge px-2 py-1 rounded text-[10px] font-bold bg-rose-100 text-rose-600';
+                progress.style.width = '100%';
+                progress.classList.replace('bg-blue-500', 'bg-rose-500');
+                card.classList.remove('loading');
+                
+                log(`${id} 失敗: ${err.message}`, 'error');
+                return { id, error: true };
+            }
+        }
+
+        async function testAllApis() {
+            const btn = document.getElementById('runAllBtn');
+            const amount = document.getElementById('testAmount').value;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<span class="loader"></span> <span>並行測試中...</span>`;
+            
+            log(`開始並行發送 3 個請求...`, 'warning');
+
+            // 使用 Promise.all 同時發送
+            const results = await Promise.all([
+                fetchSingle('frankfurter'),
+                fetchSingle('exchangerate'),
+                fetchSingle('fawazahmed')
+            ]);
+
+            // 找出最快的
+            const successfulResults = results.filter(r => !r.error);
+            if (successfulResults.length > 0) {
+                const fastest = successfulResults.reduce((prev, curr) => prev.duration < curr.duration ? prev : curr);
+                log(`🏁 測試結束！最快供應商: ${fastest.id} (${fastest.duration}ms)`, 'info');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<span>啟動並行測試</span>`;
+        }
+    </script>
+</body>
+</html>

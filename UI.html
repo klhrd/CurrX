@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CurrX - 貨幣計算機</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-main: #000000;
+            --text-secondary: #666666;
+            --accent-color: #007aff;
+            --grid-line: #e0e0e0;
+            --btn-active: #f2f2f2;
+        }
+
+        .dark-mode {
+            --bg-color: #1c1c1e;
+            --text-main: #ffffff;
+            --text-secondary: #aaaaaa;
+            --grid-line: #38383a;
+            --btn-active: #2c2c2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: background 0.3s;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            border-left: 1px solid var(--grid-line);
+            border-right: 1px solid var(--grid-line);
+        }
+
+        /* Header */
+        header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--grid-line);
+            height: 70px;
+            background-color: var(--bg-color);
+        }
+
+        .brand { font-weight: 700; font-size: 1.4rem; color: var(--accent-color); }
+        .refresh-status { text-align: center; font-size: 0.75rem; line-height: 1.2; color: var(--text-secondary); }
+        .header-actions { display: flex; gap: 15px; }
+        
+        .icon-btn {
+            background: none; border: none; color: var(--text-main);
+            cursor: pointer; padding: 5px;
+            display: flex; align-items: center;
+        }
+
+        /* 顯示區域 */
+        .display-section {
+            padding: 30px 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .currency-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid var(--text-main); padding: 8px 15px; margin-bottom: 25px;
+        }
+        .swap-icon { display: flex; align-items: center; border: 1px solid var(--text-main); padding: 2px 8px; border-radius: 4px; }
+
+        .expression { font-size: 1.8rem; margin-bottom: auto; padding-top: 10px; word-break: break-all; }
+        
+        .results { text-align: right; }
+        .res-row { display: flex; justify-content: flex-end; align-items: baseline; margin-top: 10px; }
+        .res-val { font-size: 2.2rem; font-weight: 600; }
+        .res-unit { font-size: 1.2rem; margin-left: 10px; width: 60px; text-align: left; font-weight: 500; }
+
+        /* 按鍵區佈局 */
+        .keypad-container {
+            display: flex;
+            border-top: 1px solid var(--grid-line);
+            background-color: var(--bg-color);
+        }
+
+        .main-keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            flex-grow: 1;
+        }
+
+        .side-keys {
+            display: flex;
+            flex-direction: column;
+            width: 20%;
+            border-left: 1px solid var(--grid-line);
+        }
+
+        .key {
+            height: 80px;
+            border-right: 1px solid var(--grid-line);
+            border-bottom: 1px solid var(--grid-line);
+            background: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.1s;
+        }
+
+        .key:active { background-color: var(--btn-active); }
+        .key.zero { grid-column: span 2; }
+        .key.equal { flex-grow: 1; height: auto; } /* 讓等號垂直拉長 */
+
+        /* 選單 */
+        .menu-overlay {
+            position: fixed; top: 0; right: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); display: none; z-index: 100;
+        }
+        .side-menu {
+            position: absolute; top: 0; right: 0; width: 280px; height: 100%;
+            background: var(--bg-color); padding: 50px 25px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        }
+        .menu-item {
+            padding: 18px 0; border-bottom: 1px solid var(--grid-line);
+            cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 1rem;
+        }
+
+        /* 電腦版並排佈局修正 */
+        @media (min-width: 850px) {
+            body { align-items: center; padding: 40px; }
+            .container {
+                max-width: 1000px;
+                flex-direction: row;
+                height: 700px;
+                min-height: auto;
+                border: 1px solid var(--grid-line);
+                border-radius: 24px;
+                position: relative;
+            }
+            header { 
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                width: 100%; 
+                border-radius: 24px 24px 0 0; 
+                background: transparent;
+                border-bottom: none;
+            }
+            .display-section { 
+                width: 45%; 
+                padding: 100px 40px 40px 40px; 
+                border-right: 1px solid var(--grid-line);
+                justify-content: center;
+            }
+            .keypad-container { 
+                width: 55%; 
+                border-top: none; 
+                align-items: stretch;
+            }
+            .main-keys {
+                grid-template-rows: repeat(5, 1fr);
+            }
+            .key { height: auto; }
+            .side-keys { border-left: 1px solid var(--grid-line); }
+        }
+
+        @media (max-width: 450px) {
+            .container { border: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 頂部資訊列 -->
+        <header>
+            <div class="brand">CurrX</div>
+            <div class="refresh-status">最後更新時間<br>2 分鐘前</div>
+            <div class="header-actions">
+                <button class="icon-btn"><i data-lucide="refresh-cw" size="20"></i></button>
+                <button class="icon-btn" onclick="toggleMenu()"><i data-lucide="more-vertical" size="20"></i></button>
+            </div>
+        </header>
+
+        <!-- 顯示區域 -->
+        <div class="display-section">
+            <div class="currency-bar">
+                <span>USD</span>
+                <div class="swap-icon"><i data-lucide="repeat" size="14"></i></div>
+                <span>TWD</span>
+            </div>
+            
+            <div class="expression">(5 + 8) × 2 + 13%</div>
+            
+            <div class="results">
+                <div class="res-row">
+                    <span class="res-val">29.38</span>
+                    <span class="res-unit">USD</span>
+                </div>
+                <div class="res-row" style="color: var(--accent-color);">
+                    <span class="res-val" style="font-size: 2.8rem;">145.8947</span>
+                    <span class="res-unit">TWD</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鍵區：依照草圖 ( ) % AC / + 7 8 9 / - 4 5 6 / × 1 2 3 / ÷ 0 . -->
+        <div class="keypad-container">
+            <div class="main-keys">
+                <!-- 第一排 -->
+                <button class="key">(</button>
+                <button class="key">)</button>
+                <button class="key">%</button>
+                <button class="key">AC</button>
+                <!-- 第二排 -->
+                <button class="key">+</button>
+                <button class="key">7</button>
+                <button class="key">8</button>
+                <button class="key">9</button>
+                <!-- 第三排 -->
+                <button class="key">-</button>
+                <button class="key">4</button>
+                <button class="key">5</button>
+                <button class="key">6</button>
+                <!-- 第四排 -->
+                <button class="key">×</button>
+                <button class="key">1</button>
+                <button class="key">2</button>
+                <button class="key">3</button>
+                <!-- 第五排 -->
+                <button class="key">÷</button>
+                <button class="key zero">0</button>
+                <button class="key">.</button>
+            </div>
+            <div class="side-keys">
+                <!-- 對應第一排 AC 右側的空白 -->
+                <div style="height: 80px; border-bottom: 1px solid var(--grid-line); border-right: none;"></div>
+                <!-- 第二排對應的退格鍵 -->
+                <button class="key" style="border-right: none;"><i data-lucide="delete" size="24"></i></button>
+                <!-- 第三排空白 -->
+                <div style="height: 80px; border-bottom: 1px solid var(--grid-line); border-right: none;"></div>
+                <!-- 第四、五排對應的長型等號 -->
+                <button class="key equal" style="border-right: none; background-color: var(--accent-color); color: white;">=</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 選單：依照指定的 1-6 順序 -->
+    <div class="menu-overlay" id="menu" onclick="toggleMenu()">
+        <div class="side-menu" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 25px; font-weight: 700;">Settings</h2>
+            <div class="menu-item"><i data-lucide="history" size="18"></i> 歷史紀錄回溯</div>
+            <div class="menu-item"><i data-lucide="refresh-ccw" size="18"></i> 一鍵反向換算</div>
+            <div class="menu-item"><i data-lucide="share-2" size="18"></i> 複製與分享</div>
+            <div class="menu-item"><i data-lucide="hash" size="18"></i> 小數點位數</div>
+            <div class="menu-item"><i data-lucide="landmark" size="18"></i> 匯率來源選擇</div>
+            <div class="menu-item" onclick="toggleTheme()"><i data-lucide="moon" size="18"></i> 深色/淺色模式</div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleMenu() {
+            const menu = document.getElementById('menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+        }
+    </script>
+</body>
+</html>
