@@ -1,17 +1,10 @@
-// PWA Service Worker Registration
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW register failed:', err));
-    });
-}
-
 // State Management
 const state = {
     expression: '',
     result: 0,
     fromCurrency: 'USD',
     toCurrency: 'TWD',
-    exchangeRate: 32.5, // Default/Fallback
+    exchangeRate: 32.5,
     apiSource: localStorage.getItem('apiSource') || 'frankfurter',
     precision: parseInt(localStorage.getItem('precision')) || 2,
     isDark: localStorage.getItem('theme') === 'dark',
@@ -19,7 +12,7 @@ const state = {
     lastUpdated: localStorage.getItem('lastUpdated') || null
 };
 
-// API Configurations
+// API Configurations (Corrected based on example)
 const API_CONFIGS = {
     frankfurter: {
         url: (from, to) => `https://api.frankfurter.app/latest?from=${from}&to=${to}`,
@@ -56,6 +49,7 @@ const elements = {
     themeCheckbox: document.getElementById('themeCheckbox'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
+    historyContent: document.getElementById('historyContent'),
     closeHistoryBtn: document.getElementById('closeHistoryBtn'),
     historyList: document.getElementById('historyList'),
     clearHistoryBtn: document.getElementById('clearHistoryBtn'),
@@ -72,7 +66,6 @@ function init() {
     renderHistory();
 }
 
-// Settings
 function loadSettings() {
     elements.precisionSelect.value = state.precision;
     elements.apiSourceSelect.value = state.apiSource;
@@ -86,13 +79,8 @@ function saveSettings() {
     localStorage.setItem('history', JSON.stringify(state.history));
 }
 
-// Theme
 function applyTheme() {
-    if (state.isDark) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
+    document.body.classList.toggle('dark-mode', state.isDark);
 }
 
 // Fetch Rates
@@ -125,10 +113,12 @@ async function fetchRates(force = true) {
             state.lastUpdated = Date.now();
             localStorage.setItem(cacheKey, JSON.stringify({ rate, timestamp: state.lastUpdated }));
             updateStatus();
+        } else {
+            throw new Error('路徑解析失敗');
         }
     } catch (err) {
         console.error('Fetch failed:', err);
-        elements.refreshStatus.innerHTML = '更新失敗<br>使用快取數據';
+        elements.refreshStatus.innerHTML = '更新失敗<br>請稍後再試';
     } finally {
         elements.refreshBtn.classList.remove('animate-spin');
         calculateCurrency();
@@ -142,7 +132,7 @@ function updateStatus() {
     elements.refreshStatus.innerHTML = `最後更新時間<br>${timeStr}`;
 }
 
-// Calculator Logic
+// Calculator
 function handleInput(key) {
     if (key === 'AC') {
         state.expression = '';
@@ -153,9 +143,8 @@ function handleInput(key) {
         evaluateExpression(true);
         return;
     } else {
-        // Simple sanitization for display
-        const lastChar = state.expression.slice(-1);
         const ops = ['+', '-', '*', '/', '.', '%'];
+        const lastChar = state.expression.slice(-1);
         if (ops.includes(key) && ops.includes(lastChar)) {
             state.expression = state.expression.slice(0, -1) + key;
         } else {
@@ -166,41 +155,37 @@ function handleInput(key) {
     updateUI();
 }
 
-function evaluateExpression(saveToHistory = false) {
+function evaluateExpression(save = false) {
     if (!state.expression) {
         state.result = 0;
-        updateUI();
         return;
     }
-
     try {
-        // Replace visual operators for mathjs
-        let sanitized = state.expression.replace(/×/g, '*').replace(/÷/g, '/');
-        const res = math.evaluate(sanitized);
+        let clean = state.expression.replace(/×/g, '*').replace(/÷/g, '/');
+        const res = math.evaluate(clean);
         if (typeof res === 'number') {
             state.result = res;
-            if (saveToHistory) {
+            if (save) {
                 addToHistory(state.expression, state.result);
                 state.expression = res.toString();
             }
         }
-    } catch (err) {
-        if (saveToHistory) {
-            elements.expressionDisplay.innerHTML = '<span style="color: #ff3b30;">格式錯誤</span>';
-        }
+    } catch (e) {
+        if (save) elements.expressionDisplay.innerHTML = '<span style="color:#e57373">格式錯誤</span>';
     }
     calculateCurrency();
 }
 
 function calculateCurrency() {
-    const converted = state.result * state.exchangeRate;
-    elements.toValDisplay.innerText = formatNumber(converted, state.precision);
-    elements.fromValDisplay.innerText = formatNumber(state.result, state.precision);
+    elements.fromValDisplay.innerText = formatNumber(state.result);
+    elements.toValDisplay.innerText = formatNumber(state.result * state.exchangeRate);
 }
 
-function formatNumber(num, precision) {
-    if (isNaN(num)) return '0';
-    return Number(num.toFixed(precision)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: precision });
+function formatNumber(num) {
+    return Number(num.toFixed(state.precision)).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: state.precision
+    });
 }
 
 function updateUI() {
@@ -213,16 +198,7 @@ function updateUI() {
 
 // History
 function addToHistory(exp, res) {
-    const item = {
-        id: Date.now(),
-        exp,
-        res,
-        from: state.fromCurrency,
-        to: state.toCurrency,
-        rate: state.exchangeRate,
-        converted: res * state.exchangeRate
-    };
-    state.history.unshift(item);
+    state.history.unshift({ id: Date.now(), exp, res, from: state.fromCurrency, to: state.toCurrency, rate: state.exchangeRate });
     if (state.history.length > 20) state.history.pop();
     saveSettings();
     renderHistory();
@@ -231,13 +207,13 @@ function addToHistory(exp, res) {
 function renderHistory() {
     elements.historyList.innerHTML = state.history.map(item => `
         <div class="history-card" onclick="loadHistoryItem(${item.id})">
-            <div class="history-exp">${item.exp} = ${item.res} ${item.from}</div>
-            <div class="history-res">
-                <span>${formatNumber(item.converted, state.precision)} ${item.to}</span>
-                <span style="font-size: 0.7rem; color: var(--text-secondary);">1:${item.rate.toFixed(2)}</span>
+            <div style="font-size:0.8rem; color:var(--text-secondary)">${item.exp} = ${item.res} ${item.from}</div>
+            <div style="font-weight:600; display:flex; justify-content:space-between">
+                <span>${formatNumber(item.res * item.rate)} ${item.to}</span>
+                <span style="font-size:0.7rem; opacity:0.6">1:${item.rate.toFixed(2)}</span>
             </div>
         </div>
-    `).join('') || '<div style="text-align:center; padding: 40px; color: var(--text-secondary);">無紀錄</div>';
+    `).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
 }
 
 window.loadHistoryItem = (id) => {
@@ -254,10 +230,11 @@ window.loadHistoryItem = (id) => {
     }
 };
 
-// Event Listeners
-document.querySelectorAll('.key').forEach(btn => {
-    btn.addEventListener('click', () => handleInput(btn.dataset.key));
-});
+// Events
+document.querySelectorAll('.key').forEach(btn => btn.addEventListener('click', () => {
+    handleInput(btn.dataset.key);
+    if (window.navigator.vibrate) window.navigator.vibrate(5);
+}));
 
 elements.refreshBtn.addEventListener('click', () => fetchRates(true));
 
@@ -272,7 +249,7 @@ const closeMenu = () => {
 };
 
 elements.closeMenuBtn.addEventListener('click', closeMenu);
-elements.menuOverlay.addEventListener('click', closeMenu);
+elements.menuOverlay.addEventListener('click', (e) => { if (e.target === elements.menuOverlay) closeMenu(); });
 
 elements.currencyToggle.addEventListener('click', () => {
     [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency];
@@ -301,36 +278,22 @@ elements.themeCheckbox.addEventListener('change', (e) => {
 
 elements.historyBtn.addEventListener('click', () => {
     closeMenu();
-    elements.historyOverlay.classList.add('active');
+    elements.historyOverlay.style.display = 'flex';
+    setTimeout(() => elements.historyContent.classList.add('active'), 10);
 });
 
-const closeHistory = () => elements.historyOverlay.classList.remove('active');
+const closeHistory = () => {
+    elements.historyContent.classList.remove('active');
+    setTimeout(() => elements.historyOverlay.style.display = 'none', 300);
+};
+
 elements.closeHistoryBtn.addEventListener('click', closeHistory);
-
-elements.clearHistoryBtn.addEventListener('click', () => {
-    state.history = [];
-    saveSettings();
-    renderHistory();
-});
+elements.clearHistoryBtn.addEventListener('click', () => { state.history = []; saveSettings(); renderHistory(); });
 
 elements.shareBtn.addEventListener('click', () => {
-    const text = `[CurrX 換算紀錄]
-輸入：${state.expression} = ${state.result} ${state.fromCurrency}
-結果：${elements.toValDisplay.innerText} ${state.toCurrency}
-匯率來源：${state.apiSource} (1 ${state.fromCurrency} = ${state.exchangeRate.toFixed(4)} ${state.toCurrency})`;
-    
-    if (navigator.share) {
-        navigator.share({ title: 'CurrX 換算紀錄', text }).catch(console.error);
-    } else {
-        navigator.clipboard.writeText(text).then(() => alert('已複製到剪貼簿'));
-    }
-});
-
-// Haptic feedback
-document.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (window.navigator.vibrate) window.navigator.vibrate(10);
-    });
+    const text = `[CurrX] ${state.expression} = ${state.result} ${state.fromCurrency} -> ${formatNumber(state.result * state.exchangeRate)} ${state.toCurrency}`;
+    if (navigator.share) navigator.share({ text }).catch(() => {});
+    else navigator.clipboard.writeText(text).then(() => alert('已複製'));
 });
 
 init();
