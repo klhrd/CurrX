@@ -2,8 +2,9 @@ const CACHE_NAME = 'currx-v1';
 const ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
+  './assets/css/style.css',
+  './assets/js/app.js',
+  './assets/js/currencies.js',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap',
   'https://unpkg.com/lucide@latest',
