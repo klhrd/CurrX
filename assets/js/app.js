@@ -8,8 +8,8 @@ const state = {
     apiSource: localStorage.getItem('apiSource') || 'fawazahmed',
     precision: parseInt(localStorage.getItem('precision')) || 2,
     displayMode: localStorage.getItem('displayMode') || 'en',
-    isFullscreen: localStorage.getItem('isFullscreen') === 'true',
-    isDark: localStorage.getItem('theme') === 'dark',
+    themeMode: localStorage.getItem('themeMode') || 'system', // system, light, dark
+    isFullscreen: localStorage.getItem('isFullscreen') !== 'false', // Default true
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
     pickingFor: null,
@@ -55,7 +55,7 @@ const elements = {
     precisionSelect: document.getElementById('precisionSelect'),
     apiSourceSelect: document.getElementById('apiSourceSelect'),
     displayModeSelect: document.getElementById('displayModeSelect'),
-    themeCheckbox: document.getElementById('themeCheckbox'),
+    themeModeSelect: document.getElementById('themeModeSelect'),
     fullscreenCheckbox: document.getElementById('fullscreenCheckbox'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
@@ -81,16 +81,22 @@ function init() {
     renderHistory();
     renderCurrencyList();
     
+    // Auto-fullscreen logic
     if (state.isFullscreen) {
         document.addEventListener('click', attemptFullscreen, { once: true });
     }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (state.themeMode === 'system') applyTheme();
+    });
 }
 
 function loadSettings() {
     elements.precisionSelect.value = state.precision;
     elements.apiSourceSelect.value = state.apiSource;
     elements.displayModeSelect.value = state.displayMode;
-    elements.themeCheckbox.checked = state.isDark;
+    elements.themeModeSelect.value = state.themeMode;
     elements.fullscreenCheckbox.checked = state.isFullscreen;
 }
 
@@ -98,13 +104,23 @@ function saveSettings() {
     localStorage.setItem('apiSource', state.apiSource);
     localStorage.setItem('precision', state.precision);
     localStorage.setItem('displayMode', state.displayMode);
+    localStorage.setItem('themeMode', state.themeMode);
     localStorage.setItem('isFullscreen', state.isFullscreen);
-    localStorage.setItem('theme', state.isDark ? 'dark' : 'light');
     localStorage.setItem('history', JSON.stringify(state.history));
 }
 
 function applyTheme() {
-    document.body.classList.toggle('dark-mode', state.isDark);
+    let isDark = false;
+    if (state.themeMode === 'system') {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } else {
+        isDark = (state.themeMode === 'dark');
+    }
+    document.body.classList.toggle('dark-mode', isDark);
+    
+    // Update theme color meta
+    const themeColor = isDark ? '#000000' : '#5c6bc0';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
 }
 
 function attemptFullscreen() {
@@ -177,7 +193,8 @@ function handleInput(key) {
     
     // Haptic feedback
     if (window.navigator.vibrate) {
-        window.navigator.vibrate(state.isDark ? 15 : 10);
+        const isDark = document.body.classList.contains('dark-mode');
+        window.navigator.vibrate(isDark ? 15 : 10);
     }
 
     if (key === 'AC') {
@@ -234,6 +251,12 @@ function evaluateExpression(save = false) {
 function calculateCurrency() {
     elements.fromValDisplay.innerText = formatNumber(state.result);
     elements.toValDisplay.innerText = formatNumber(state.result * state.exchangeRate);
+    
+    // Auto-scroll to end after calculation
+    requestAnimationFrame(() => {
+        const results = document.querySelector('.results');
+        results.scrollLeft = results.scrollWidth;
+    });
 }
 
 function formatNumber(num) {
@@ -251,9 +274,8 @@ function updateUI() {
     elements.fromUnit.innerText = state.fromCurrency;
     elements.toUnit.innerText = state.toCurrency;
     
-    // Auto scroll result area to end
-    const results = document.querySelector('.results');
-    results.scrollLeft = results.scrollWidth;
+    const expCont = document.getElementById('expressionDisplay');
+    expCont.scrollLeft = expCont.scrollWidth;
 }
 
 // Currency Picker
@@ -399,17 +421,16 @@ elements.displayModeSelect.addEventListener('change', (e) => {
     updateUI();
 });
 
+elements.themeModeSelect.addEventListener('change', (e) => {
+    state.themeMode = e.target.value;
+    saveSettings();
+    applyTheme();
+});
+
 elements.fullscreenCheckbox.addEventListener('change', (e) => {
     state.isFullscreen = e.target.checked;
     saveSettings();
     if (state.isFullscreen) attemptFullscreen();
-    else if (document.fullscreenElement) document.exitFullscreen();
-});
-
-elements.themeCheckbox.addEventListener('change', (e) => {
-    state.isDark = e.target.checked;
-    applyTheme();
-    saveSettings();
 });
 
 elements.historyBtn.addEventListener('click', () => {
