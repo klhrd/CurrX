@@ -8,6 +8,7 @@ const state = {
     apiSource: localStorage.getItem('apiSource') || 'fawazahmed',
     precision: parseInt(localStorage.getItem('precision')) || 2,
     displayMode: localStorage.getItem('displayMode') || 'en',
+    isFullscreen: localStorage.getItem('isFullscreen') === 'true',
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
@@ -55,6 +56,7 @@ const elements = {
     apiSourceSelect: document.getElementById('apiSourceSelect'),
     displayModeSelect: document.getElementById('displayModeSelect'),
     themeCheckbox: document.getElementById('themeCheckbox'),
+    fullscreenCheckbox: document.getElementById('fullscreenCheckbox'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
     historyContent: document.getElementById('historyContent'),
@@ -78,6 +80,10 @@ function init() {
     fetchRates(false);
     renderHistory();
     renderCurrencyList();
+    
+    if (state.isFullscreen) {
+        document.addEventListener('click', attemptFullscreen, { once: true });
+    }
 }
 
 function loadSettings() {
@@ -85,18 +91,26 @@ function loadSettings() {
     elements.apiSourceSelect.value = state.apiSource;
     elements.displayModeSelect.value = state.displayMode;
     elements.themeCheckbox.checked = state.isDark;
+    elements.fullscreenCheckbox.checked = state.isFullscreen;
 }
 
 function saveSettings() {
     localStorage.setItem('apiSource', state.apiSource);
     localStorage.setItem('precision', state.precision);
     localStorage.setItem('displayMode', state.displayMode);
+    localStorage.setItem('isFullscreen', state.isFullscreen);
     localStorage.setItem('theme', state.isDark ? 'dark' : 'light');
     localStorage.setItem('history', JSON.stringify(state.history));
 }
 
 function applyTheme() {
     document.body.classList.toggle('dark-mode', state.isDark);
+}
+
+function attemptFullscreen() {
+    if (state.isFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
 }
 
 // Fetch Rates
@@ -161,6 +175,11 @@ function handleInput(key) {
     const visualOps = { '*': '×', '/': '÷', '-': '−' };
     const logicalOps = ['+', '-', '*', '/', '.', '%'];
     
+    // Haptic feedback
+    if (window.navigator.vibrate) {
+        window.navigator.vibrate(state.isDark ? 15 : 10);
+    }
+
     if (key === 'AC') {
         state.expression = '';
         state.result = 0;
@@ -231,6 +250,10 @@ function updateUI() {
     elements.toCurrency.innerText = getCurrencyName(state.toCurrency, state.displayMode);
     elements.fromUnit.innerText = state.fromCurrency;
     elements.toUnit.innerText = state.toCurrency;
+    
+    // Auto scroll result area to end
+    const results = document.querySelector('.results');
+    results.scrollLeft = results.scrollWidth;
 }
 
 // Currency Picker
@@ -325,7 +348,6 @@ window.loadHistoryItem = (id) => {
 // Events
 document.querySelectorAll('.key').forEach(btn => btn.addEventListener('click', () => {
     handleInput(btn.dataset.key);
-    if (window.navigator.vibrate) window.navigator.vibrate(5);
 }));
 
 elements.refreshBtn.addEventListener('click', () => fetchRates(true));
@@ -375,6 +397,13 @@ elements.displayModeSelect.addEventListener('change', (e) => {
     state.displayMode = e.target.value;
     saveSettings();
     updateUI();
+});
+
+elements.fullscreenCheckbox.addEventListener('change', (e) => {
+    state.isFullscreen = e.target.checked;
+    saveSettings();
+    if (state.isFullscreen) attemptFullscreen();
+    else if (document.fullscreenElement) document.exitFullscreen();
 });
 
 elements.themeCheckbox.addEventListener('change', (e) => {

@@ -2,10 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CurrX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CurrX v0.2.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#5c6bc0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="assets/icons/icon-512.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -96,7 +98,7 @@
     <!-- Side Menu -->
     <div class="menu-overlay" id="menuOverlay">
         <div class="side-menu" id="sideMenu">
-            <div class="menu-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div class="menu-header">
                 <div style="font-size:1.5rem; font-weight:700;">Settings</div>
                 <button class="icon-btn" id="closeMenuBtn"><i data-lucide="x"></i></button>
             </div>
@@ -127,13 +129,17 @@
                     <option value="both">兩者併列</option>
                 </select>
             </div>
+            <div class="menu-item">
+                <i data-lucide="maximize"></i> 全螢幕模式
+                <input type="checkbox" id="fullscreenCheckbox" style="width: 20px; height: 20px;">
+            </div>
             <div class="menu-item" id="themeToggle">
                 <i data-lucide="moon"></i> 深色模式
-                <input type="checkbox" id="themeCheckbox" style="margin-left: auto;">
+                <input type="checkbox" id="themeCheckbox" style="width: 20px; height: 20px;">
             </div>
             <div class="menu-item" id="shareBtn"><i data-lucide="share-2"></i> 複製與分享</div>
             
-            <div class="menu-footer">CurrX v0.1.8</div>
+            <div class="menu-footer">CurrX v0.2.0</div>
         </div>
     </div>
 
