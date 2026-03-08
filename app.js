@@ -5,16 +5,15 @@ const state = {
     fromCurrency: 'USD',
     toCurrency: 'TWD',
     exchangeRate: 32.5,
-    apiSource: localStorage.getItem('apiSource') || 'fawazahmed', // Priority 1
+    apiSource: localStorage.getItem('apiSource') || 'fawazahmed',
     precision: parseInt(localStorage.getItem('precision')) || 2,
-    displayMode: localStorage.getItem('displayMode') || 'en', // en, zh, both
+    displayMode: localStorage.getItem('displayMode') || 'en',
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
     pickingFor: null
 };
 
-// All available currencies from our dict + some extras to ensure coverage
 const CURRENCY_LIST_CODES = Object.keys(CURRENCY_DICT);
 
 // API Configurations
@@ -126,16 +125,10 @@ async function fetchRates(force = true) {
     try {
         const config = API_CONFIGS[state.apiSource];
         const url = config.url(state.fromCurrency, state.toCurrency);
-        console.log(`[Fetch Start] Source: ${state.apiSource}, URL: ${url}`);
-        
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
         const data = await response.json();
-        console.log(`[Fetch Success] Raw Data:`, data);
-        
         const rate = config.getPath(data, state.toCurrency, state.fromCurrency);
-        console.log(`[Rate Extracted] ${state.fromCurrency}/${state.toCurrency} = ${rate}`);
 
         if (rate !== undefined) {
             state.exchangeRate = rate;
@@ -163,6 +156,9 @@ function updateStatus() {
 
 // Calculator Logic
 function handleInput(key) {
+    const visualOps = { '*': '×', '/': '÷', '-': '−' };
+    const logicalOps = ['+', '-', '*', '/', '.', '%'];
+    
     if (key === 'AC') {
         state.expression = '';
         state.result = 0;
@@ -172,11 +168,14 @@ function handleInput(key) {
         evaluateExpression(true);
         return;
     } else {
-        const ops = ['+', '-', '*', '/', '.', '%'];
-        const visualOps = { '*': '×', '/': '÷' };
-        const displayKey = visualOps[key] || key;
         const lastChar = state.expression.slice(-1);
-        if (ops.includes(key) && (lastChar === '×' || lastChar === '÷' || ops.includes(lastChar))) {
+        const displayKey = visualOps[key] || key;
+        
+        // Prevent double operators
+        const isCurrentOp = logicalOps.includes(key);
+        const isLastOp = ['+', '−', '×', '÷', '.', '%'].includes(lastChar);
+        
+        if (isCurrentOp && isLastOp) {
             state.expression = state.expression.slice(0, -1) + displayKey;
         } else {
             state.expression += displayKey;
@@ -193,7 +192,7 @@ function evaluateExpression(save = false) {
         return;
     }
     try {
-        let clean = state.expression.replace(/×/g, '*').replace(/÷/g, '/');
+        let clean = state.expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
         const res = math.evaluate(clean);
         if (typeof res === 'number') {
             state.result = res;
@@ -205,8 +204,8 @@ function evaluateExpression(save = false) {
     } catch (e) {
         if (save) {
             const originalExp = state.expression;
-            elements.expressionDisplay.innerHTML = '<span style="color:#e57373">格式錯誤</span>';
-            setTimeout(() => { if(state.expression === originalExp) updateUI(); }, 1500);
+            elements.expressionDisplay.innerHTML = '<span style="color:#ff7675">格式錯誤</span>';
+            setTimeout(() => { if(state.expression === originalExp) updateUI(); }, 1200);
         }
     }
     calculateCurrency();
@@ -227,12 +226,8 @@ function formatNumber(num) {
 
 function updateUI() {
     elements.expressionDisplay.innerText = state.expression;
-    
-    // Use getCurrencyName from currencies.js
     elements.fromCurrency.innerText = getCurrencyName(state.fromCurrency, state.displayMode);
     elements.toCurrency.innerText = getCurrencyName(state.toCurrency, state.displayMode);
-    
-    // Units stay as codes or simple names
     elements.fromUnit.innerText = state.fromCurrency;
     elements.toUnit.innerText = state.toCurrency;
 }
@@ -245,7 +240,7 @@ function renderCurrencyList() {
             <div class="currency-list-item" onclick="selectCurrency('${code}')">
                 <div style="display:flex; flex-direction:column">
                     <span style="font-weight:700">${code}</span>
-                    <span style="font-size:0.75rem; opacity:0.6">${data.zh}</span>
+                    <span style="font-size:0.75rem; opacity:0.6">${data.cn}</span>
                 </div>
                 <span style="font-size:0.75rem; opacity:0.6; align-self:center">${data.en}</span>
             </div>

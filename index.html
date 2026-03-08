@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CurrX v0.1.5</title>
+    <title>CurrX</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#5c6bc0">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2454/2454282.png">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,53 +16,54 @@
     <div class="app-container">
         <!-- Header -->
         <header>
-            <div class="brand">CurrX v0.1.5</div>
+            <div class="brand">CurrX</div>
             <div class="refresh-status" id="refreshStatus">
                 正在讀取快取...<br>---
             </div>
             <div class="header-actions">
                 <button class="icon-btn" id="refreshBtn" title="重新整理">
-                    <i data-lucide="refresh-cw" size="20"></i>
+                    <i data-lucide="refresh-cw" size="18"></i>
                 </button>
                 <button class="icon-btn" id="menuBtn" title="設定">
-                    <i data-lucide="settings" size="20"></i>
+                    <i data-lucide="settings" size="18"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Display Area -->
-        <div class="display-section">
-            <div class="currency-bar-container">
-                <div class="currency-item" id="fromCurrencyBtn">
-                    <span class="currency-name" id="fromCurrency">USD</span>
-                    <i data-lucide="chevron-down" size="12"></i>
+        <!-- Main Display Content -->
+        <main class="main-content">
+            <div class="display-block">
+                <div class="currency-bar-container">
+                    <div class="currency-item" id="fromCurrencyBtn">
+                        <span class="currency-name" id="fromCurrency">USD</span>
+                        <i data-lucide="chevron-down" size="12"></i>
+                    </div>
+                    <div class="swap-btn" id="swapBtn">
+                        <i data-lucide="repeat" size="16"></i>
+                    </div>
+                    <div class="currency-item" id="toCurrencyBtn">
+                        <span class="currency-name" id="toCurrency">TWD</span>
+                        <i data-lucide="chevron-down" size="12"></i>
+                    </div>
                 </div>
-                <div class="swap-btn" id="swapBtn">
-                    <i data-lucide="repeat" size="16"></i>
-                </div>
-                <div class="currency-item" id="toCurrencyBtn">
-                    <span class="currency-name" id="toCurrency">TWD</span>
-                    <i data-lucide="chevron-down" size="12"></i>
+                
+                <div class="result-area">
+                    <div class="expression" id="expressionDisplay"></div>
+                    <div class="results">
+                        <div class="res-row secondary">
+                            <span class="res-val" id="fromValDisplay">0</span>
+                            <span class="res-unit" id="fromUnit">USD</span>
+                        </div>
+                        <div class="res-row primary">
+                            <span class="res-val" id="toValDisplay">0</span>
+                            <span class="res-unit" id="toUnit">TWD</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="expression-container">
-                <div class="expression" id="expressionDisplay"></div>
-            </div>
-            
-            <div class="results">
-                <div class="res-row secondary">
-                    <span class="res-val" id="fromValDisplay">0</span>
-                    <span class="res-unit" id="fromUnit">USD</span>
-                </div>
-                <div class="res-row primary">
-                    <span class="res-val" id="toValDisplay">0</span>
-                    <span class="res-unit" id="toUnit">TWD</span>
-                </div>
-            </div>
-        </div>
+        </main>
 
-        <!-- Keypad -->
+        <!-- Keypad (5-Column) -->
         <div class="keypad">
             <button class="key operator" data-key="(">(</button>
             <button class="key operator" data-key=")">)</button>
@@ -75,7 +76,7 @@
             <button class="key" data-key="9">9</button>
             <button class="key action span-row-2" data-key="BACK"><i data-lucide="delete"></i></button>
             
-            <button class="key operator" data-key="-">-</button>
+            <button class="key operator" data-key="-">−</button>
             <button class="key" data-key="4">4</button>
             <button class="key" data-key="5">5</button>
             <button class="key" data-key="6">6</button>
@@ -95,14 +96,12 @@
     <!-- Side Menu -->
     <div class="menu-overlay" id="menuOverlay">
         <div class="side-menu" id="sideMenu">
-            <div class="menu-header">
+            <div class="menu-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <div style="font-size:1.5rem; font-weight:700;">Settings</div>
                 <button class="icon-btn" id="closeMenuBtn"><i data-lucide="x"></i></button>
             </div>
             
-            <div class="menu-item" id="historyBtn">
-                <i data-lucide="history"></i> 歷史紀錄回溯
-            </div>
+            <div class="menu-item" id="historyBtn"><i data-lucide="history"></i> 歷史紀錄回溯</div>
             <div class="menu-item">
                 <i data-lucide="landmark"></i> 匯率來源
                 <select id="apiSourceSelect">
@@ -132,13 +131,13 @@
                 <i data-lucide="moon"></i> 深色模式
                 <input type="checkbox" id="themeCheckbox" style="margin-left: auto;">
             </div>
-            <div class="menu-item" id="shareBtn">
-                <i data-lucide="share-2"></i> 複製與分享
-            </div>
+            <div class="menu-item" id="shareBtn"><i data-lucide="share-2"></i> 複製與分享</div>
+            
+            <div class="menu-footer">CurrX v0.1.6</div>
         </div>
     </div>
 
-    <!-- Currency Picker Modal -->
+    <!-- Picker Modal -->
     <div class="menu-overlay" id="pickerOverlay">
         <div class="side-menu" id="pickerContent">
             <div class="menu-header">
@@ -157,7 +156,7 @@
                 <button class="icon-btn" id="closeHistoryBtn"><i data-lucide="x"></i></button>
             </div>
             <div class="history-list" id="historyList"></div>
-            <button class="key operator" id="clearHistoryBtn" style="height:50px; width:100%; border-radius:12px;">清除所有紀錄</button>
+            <button class="key operator" id="clearHistoryBtn" style="height:60px; width:100%; border-radius:20px; font-weight:700;">清除所有紀錄</button>
         </div>
     </div>
 
