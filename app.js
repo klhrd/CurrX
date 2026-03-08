@@ -5,42 +5,31 @@ const state = {
     fromCurrency: 'USD',
     toCurrency: 'TWD',
     exchangeRate: 32.5,
-    apiSource: localStorage.getItem('apiSource') || 'frankfurter',
+    apiSource: localStorage.getItem('apiSource') || 'fawazahmed', // Priority 1
     precision: parseInt(localStorage.getItem('precision')) || 2,
+    displayMode: localStorage.getItem('displayMode') || 'en', // en, cn, both
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
-    pickingFor: null // 'from' or 'to'
+    pickingFor: null
 };
 
-const COMMON_CURRENCIES = [
-    { code: 'TWD', name: '新台幣' },
-    { code: 'USD', name: '美金' },
-    { code: 'JPY', name: '日圓' },
-    { code: 'EUR', name: '歐元' },
-    { code: 'HKD', name: '港幣' },
-    { code: 'KRW', name: '韓元' },
-    { code: 'CNY', name: '人民幣' },
-    { code: 'GBP', name: '英鎊' },
-    { code: 'AUD', name: '澳幣' },
-    { code: 'CAD', name: '加幣' },
-    { code: 'SGD', name: '新加坡幣' },
-    { code: 'THB', name: '泰銖' }
-];
+// All available currencies from our dict + some extras to ensure coverage
+const CURRENCY_LIST_CODES = Object.keys(CURRENCY_DICT);
 
 // API Configurations
 const API_CONFIGS = {
-    frankfurter: {
-        url: (from, to) => `https://api.frankfurter.app/latest?from=${from}&to=${to}`,
-        getPath: (data, to) => data?.rates?.[to]
+    fawazahmed: {
+        url: (from) => `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${from.toLowerCase()}.json`,
+        getPath: (data, to, from) => data?.[from.toLowerCase()]?.[to.toLowerCase()]
     },
     exchangerate: {
         url: (from) => `https://open.er-api.com/v6/latest/${from}`,
         getPath: (data, to) => data?.rates?.[to]
     },
-    fawazahmed: {
-        url: (from) => `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${from.toLowerCase()}.json`,
-        getPath: (data, to, from) => data?.[from.toLowerCase()]?.[to.toLowerCase()]
+    frankfurter: {
+        url: (from, to) => `https://api.frankfurter.app/latest?from=${from}&to=${to}`,
+        getPath: (data, to) => data?.rates?.[to]
     }
 };
 
@@ -64,6 +53,7 @@ const elements = {
     toUnit: document.getElementById('toUnit'),
     precisionSelect: document.getElementById('precisionSelect'),
     apiSourceSelect: document.getElementById('apiSourceSelect'),
+    displayModeSelect: document.getElementById('displayModeSelect'),
     themeCheckbox: document.getElementById('themeCheckbox'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
@@ -92,12 +82,14 @@ function init() {
 function loadSettings() {
     elements.precisionSelect.value = state.precision;
     elements.apiSourceSelect.value = state.apiSource;
+    elements.displayModeSelect.value = state.displayMode;
     elements.themeCheckbox.checked = state.isDark;
 }
 
 function saveSettings() {
     localStorage.setItem('apiSource', state.apiSource);
     localStorage.setItem('precision', state.precision);
+    localStorage.setItem('displayMode', state.displayMode);
     localStorage.setItem('theme', state.isDark ? 'dark' : 'light');
     localStorage.setItem('history', JSON.stringify(state.history));
 }
@@ -117,11 +109,10 @@ async function fetchRates(force = true) {
     }
 
     const now = Date.now();
-    const cacheKey = `rates_${state.fromCurrency}_${state.toCurrency}`;
+    const cacheKey = `rates_${state.fromCurrency}_${state.toCurrency}_${state.apiSource}`;
     const cachedData = JSON.parse(localStorage.getItem(cacheKey));
 
     if (!force && cachedData && (now - cachedData.timestamp < 3600000)) {
-        console.log(`[Cache Hit] ${state.fromCurrency}/${state.toCurrency} = ${cachedData.rate}`);
         state.exchangeRate = cachedData.rate;
         state.lastUpdated = cachedData.timestamp;
         updateStatus();
@@ -156,7 +147,7 @@ async function fetchRates(force = true) {
         }
     } catch (err) {
         console.error('[Fetch Error]', err);
-        elements.refreshStatus.innerHTML = '更新失敗<br>請檢查網路';
+        elements.refreshStatus.innerHTML = '更新失敗<br>請檢查網路/來源';
     } finally {
         elements.refreshBtn.classList.remove('animate-spin');
         calculateCurrency();
@@ -170,7 +161,7 @@ function updateStatus() {
     elements.refreshStatus.innerHTML = `最後更新時間<br>${timeStr}`;
 }
 
-// Calculator
+// Calculator Logic
 function handleInput(key) {
     if (key === 'AC') {
         state.expression = '';
@@ -184,7 +175,6 @@ function handleInput(key) {
         const ops = ['+', '-', '*', '/', '.', '%'];
         const visualOps = { '*': '×', '/': '÷' };
         const displayKey = visualOps[key] || key;
-        
         const lastChar = state.expression.slice(-1);
         if (ops.includes(key) && (lastChar === '×' || lastChar === '÷' || ops.includes(lastChar))) {
             state.expression = state.expression.slice(0, -1) + displayKey;
@@ -237,20 +227,30 @@ function formatNumber(num) {
 
 function updateUI() {
     elements.expressionDisplay.innerText = state.expression;
-    elements.fromCurrency.innerText = state.fromCurrency;
-    elements.toCurrency.innerText = state.toCurrency;
+    
+    // Use getCurrencyName from currencies.js
+    elements.fromCurrency.innerText = getCurrencyName(state.fromCurrency, state.displayMode);
+    elements.toCurrency.innerText = getCurrencyName(state.toCurrency, state.displayMode);
+    
+    // Units stay as codes or simple names
     elements.fromUnit.innerText = state.fromCurrency;
     elements.toUnit.innerText = state.toCurrency;
 }
 
 // Currency Picker
 function renderCurrencyList() {
-    elements.currencyList.innerHTML = COMMON_CURRENCIES.map(c => `
-        <div class="currency-list-item" onclick="selectCurrency('${c.code}')">
-            <span>${c.code}</span>
-            <span style="font-size:0.8rem; opacity:0.6">${c.name}</span>
-        </div>
-    `).join('');
+    elements.currencyList.innerHTML = CURRENCY_LIST_CODES.map(code => {
+        const data = CURRENCY_DICT[code];
+        return `
+            <div class="currency-list-item" onclick="selectCurrency('${code}')">
+                <div style="display:flex; flex-direction:column">
+                    <span style="font-weight:700">${code}</span>
+                    <span style="font-size:0.75rem; opacity:0.6">${data.cn}</span>
+                </div>
+                <span style="font-size:0.75rem; opacity:0.6; align-self:center">${data.en}</span>
+            </div>
+        `;
+    }).join('');
 }
 
 function openPicker(type) {
@@ -274,7 +274,14 @@ window.selectCurrency = (code) => {
 
 // History
 function addToHistory(exp, res) {
-    state.history.unshift({ id: Date.now(), exp, res, from: state.fromCurrency, to: state.toCurrency, rate: state.exchangeRate });
+    state.history.unshift({ 
+        id: Date.now(), 
+        exp, res, 
+        from: state.fromCurrency, 
+        to: state.toCurrency, 
+        rate: state.exchangeRate,
+        api: state.apiSource
+    });
     if (state.history.length > 20) state.history.pop();
     saveSettings();
     renderHistory();
@@ -283,10 +290,10 @@ function addToHistory(exp, res) {
 function renderHistory() {
     elements.historyList.innerHTML = state.history.map(item => `
         <div class="history-card" onclick="loadHistoryItem(${item.id})">
-            <div style="font-size:0.8rem; color:var(--text-secondary)">${item.exp} = ${item.res} ${item.from}</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary)">${item.exp} = ${item.res} ${item.from}</div>
             <div style="font-weight:600; display:flex; justify-content:space-between">
                 <span>${formatNumber(item.res * item.rate)} ${item.to}</span>
-                <span style="font-size:0.7rem; opacity:0.6">1:${item.rate.toFixed(4)}</span>
+                <span style="font-size:0.65rem; opacity:0.6">1:${item.rate.toFixed(4)} (${item.api})</span>
             </div>
         </div>
     `).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
@@ -300,6 +307,7 @@ window.loadHistoryItem = (id) => {
         state.fromCurrency = item.from;
         state.toCurrency = item.to;
         state.exchangeRate = item.rate;
+        state.apiSource = item.api || state.apiSource;
         updateUI();
         calculateCurrency();
         closeHistory();
@@ -348,6 +356,12 @@ elements.apiSourceSelect.addEventListener('change', (e) => {
     state.apiSource = e.target.value;
     saveSettings();
     fetchRates(true);
+});
+
+elements.displayModeSelect.addEventListener('change', (e) => {
+    state.displayMode = e.target.value;
+    saveSettings();
+    updateUI();
 });
 
 elements.themeCheckbox.addEventListener('change', (e) => {

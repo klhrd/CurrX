@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CurrX - 智能貨幣計算機</title>
+    <title>CurrX v0.1.4</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#5c6bc0">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2454/2454282.png">
@@ -16,7 +16,7 @@
     <div class="app-container">
         <!-- Header -->
         <header>
-            <div class="brand">CurrX</div>
+            <div class="brand">CurrX v0.1.4</div>
             <div class="refresh-status" id="refreshStatus">
                 正在讀取快取...<br>---
             </div>
@@ -62,7 +62,7 @@
             </div>
         </div>
 
-        <!-- Keypad (5-Column) -->
+        <!-- Keypad -->
         <div class="keypad">
             <button class="key operator" data-key="(">(</button>
             <button class="key operator" data-key=")">)</button>
@@ -95,7 +95,7 @@
     <!-- Side Menu -->
     <div class="menu-overlay" id="menuOverlay">
         <div class="side-menu" id="sideMenu">
-            <div class="menu-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div class="menu-header">
                 <div style="font-size:1.5rem; font-weight:700;">Settings</div>
                 <button class="icon-btn" id="closeMenuBtn"><i data-lucide="x"></i></button>
             </div>
@@ -106,9 +106,9 @@
             <div class="menu-item">
                 <i data-lucide="landmark"></i> 匯率來源
                 <select id="apiSourceSelect">
-                    <option value="frankfurter">Frankfurter</option>
-                    <option value="exchangerate">ExchangeRate</option>
                     <option value="fawazahmed">Fawazahmed0</option>
+                    <option value="exchangerate">ExchangeRate</option>
+                    <option value="frankfurter">Frankfurter</option>
                 </select>
             </div>
             <div class="menu-item">
@@ -118,6 +118,14 @@
                     <option value="2">2 位</option>
                     <option value="3">3 位</option>
                     <option value="4">4 位</option>
+                </select>
+            </div>
+            <div class="menu-item">
+                <i data-lucide="layout"></i> 顯示語言
+                <select id="displayModeSelect">
+                    <option value="en">僅英文</option>
+                    <option value="cn">僅中文</option>
+                    <option value="both">兩者併列</option>
                 </select>
             </div>
             <div class="menu-item" id="themeToggle">
@@ -137,9 +145,7 @@
                 <div style="font-size:1.2rem; font-weight:700;">選擇幣別</div>
                 <button class="icon-btn" id="closePickerBtn"><i data-lucide="x"></i></button>
             </div>
-            <div class="currency-list" id="currencyList">
-                <!-- Currencies will be injected here -->
-            </div>
+            <div class="currency-list" id="currencyList"></div>
         </div>
     </div>
 
@@ -156,6 +162,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="currencies.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
