@@ -11,7 +11,8 @@ const state = {
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
-    pickingFor: null
+    pickingFor: null,
+    searchQuery: ''
 };
 
 const CURRENCY_LIST_CODES = Object.keys(CURRENCY_DICT);
@@ -64,7 +65,8 @@ const elements = {
     pickerOverlay: document.getElementById('pickerOverlay'),
     pickerContent: document.getElementById('pickerContent'),
     closePickerBtn: document.getElementById('closePickerBtn'),
-    currencyList: document.getElementById('currencyList')
+    currencyList: document.getElementById('currencyList'),
+    currencySearch: document.getElementById('currencySearch')
 };
 
 // Initialize
@@ -171,7 +173,6 @@ function handleInput(key) {
         const lastChar = state.expression.slice(-1);
         const displayKey = visualOps[key] || key;
         
-        // Prevent double operators
         const isCurrentOp = logicalOps.includes(key);
         const isLastOp = ['+', '−', '×', '÷', '.', '%'].includes(lastChar);
         
@@ -234,24 +235,36 @@ function updateUI() {
 
 // Currency Picker
 function renderCurrencyList() {
-    elements.currencyList.innerHTML = CURRENCY_LIST_CODES.map(code => {
+    const query = state.searchQuery.toLowerCase();
+    const filteredCodes = CURRENCY_LIST_CODES.filter(code => {
+        const data = CURRENCY_DICT[code];
+        return code.toLowerCase().includes(query) || 
+               data.zh.toLowerCase().includes(query) || 
+               data.en.toLowerCase().includes(query);
+    });
+
+    elements.currencyList.innerHTML = filteredCodes.map(code => {
         const data = CURRENCY_DICT[code];
         return `
             <div class="currency-list-item" onclick="selectCurrency('${code}')">
                 <div style="display:flex; flex-direction:column">
                     <span style="font-weight:700">${code}</span>
-                    <span style="font-size:0.75rem; opacity:0.6">${data.cn}</span>
+                    <span style="font-size:0.75rem; opacity:0.6">${data.zh}</span>
                 </div>
                 <span style="font-size:0.75rem; opacity:0.6; align-self:center">${data.en}</span>
             </div>
         `;
-    }).join('');
+    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">找不到結果</div>';
 }
 
 function openPicker(type) {
     state.pickingFor = type;
+    state.searchQuery = '';
+    elements.currencySearch.value = '';
+    renderCurrencyList();
     elements.pickerOverlay.style.display = 'block';
     setTimeout(() => elements.pickerContent.classList.add('active'), 10);
+    setTimeout(() => elements.currencySearch.focus(), 300);
 }
 
 const closePicker = () => {
@@ -333,6 +346,11 @@ elements.menuOverlay.addEventListener('click', (e) => { if (e.target === element
 elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
 elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
 elements.closePickerBtn.addEventListener('click', closePicker);
+
+elements.currencySearch.addEventListener('input', (e) => {
+    state.searchQuery = e.target.value;
+    renderCurrencyList();
+});
 
 elements.swapBtn.addEventListener('click', () => {
     [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency];
