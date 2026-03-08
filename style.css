@@ -2,7 +2,7 @@
     --bg-color: #ffffff;
     --text-main: #1d1d1f;
     --text-secondary: #86868b;
-    --accent-color: #5c6bc0; /* Muted Indigo */
+    --accent-color: #5c6bc0;
     --accent-light: #e8eaf6;
     --grid-line: #f5f5f7;
     --btn-bg: #f5f5f7;
@@ -108,19 +108,42 @@ header {
     justify-content: flex-end;
 }
 
-.currency-toggle {
+.currency-bar-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--btn-bg);
-    padding: 10px 20px;
+    padding: 8px 12px;
     border-radius: 16px;
     margin-bottom: 20px;
-    cursor: pointer;
 }
 
-.currency-name { font-weight: 600; font-size: 0.9rem; }
-.swap-icon { color: var(--accent-color); }
+.currency-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.currency-item:hover { background: var(--btn-active); }
+
+.swap-btn {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    transition: transform 0.3s ease;
+}
+
+.swap-btn:active { transform: rotate(180deg); }
+
+.currency-name { font-weight: 700; font-size: 1rem; color: var(--text-main); }
 
 .expression-container {
     min-height: 40px;
@@ -132,6 +155,7 @@ header {
     font-size: 1.4rem;
     color: var(--text-secondary);
     word-break: break-all;
+    min-height: 1.4rem;
 }
 
 .results {
@@ -213,7 +237,7 @@ header {
     color: var(--key-equal-text);
 }
 
-/* Side Menu / History Overlays */
+/* Side Menu / Overlays */
 .menu-overlay, .history-overlay {
     position: fixed;
     top: 0; left: 0;
@@ -221,7 +245,8 @@ header {
     background: rgba(0,0,0,0.4);
     display: none;
     z-index: 100;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .side-menu {
@@ -231,7 +256,7 @@ header {
     background: var(--bg-color);
     padding: 40px 24px;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .side-menu.active { transform: translateX(0); }
@@ -248,7 +273,24 @@ header {
     color: var(--text-main);
 }
 
-.history-overlay { z-index: 110; display: flex; align-items: flex-end; }
+.currency-list {
+    margin-top: 10px;
+    max-height: calc(100% - 80px);
+    overflow-y: auto;
+}
+
+.currency-list-item {
+    padding: 15px 10px;
+    border-bottom: 1px solid var(--grid-line);
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+}
+
+.currency-list-item:active { background: var(--btn-active); }
+
+.history-overlay { z-index: 110; align-items: flex-end; }
 
 .history-content {
     width: 100%; height: 75%;
@@ -257,7 +299,7 @@ header {
     padding: 24px;
     display: flex; flex-direction: column;
     transform: translateY(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .history-content.active { transform: translateY(0); }

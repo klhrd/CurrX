@@ -32,10 +32,18 @@
 
         <!-- Display Area -->
         <div class="display-section">
-            <div class="currency-toggle" id="currencyToggle">
-                <span class="currency-name" id="fromCurrency">USD</span>
-                <div class="swap-icon"><i data-lucide="repeat" size="16"></i></div>
-                <span class="currency-name" id="toCurrency">TWD</span>
+            <div class="currency-bar-container">
+                <div class="currency-item" id="fromCurrencyBtn">
+                    <span class="currency-name" id="fromCurrency">USD</span>
+                    <i data-lucide="chevron-down" size="12"></i>
+                </div>
+                <div class="swap-btn" id="swapBtn">
+                    <i data-lucide="repeat" size="16"></i>
+                </div>
+                <div class="currency-item" id="toCurrencyBtn">
+                    <span class="currency-name" id="toCurrency">TWD</span>
+                    <i data-lucide="chevron-down" size="12"></i>
+                </div>
             </div>
             
             <div class="expression-container">
@@ -56,33 +64,28 @@
 
         <!-- Keypad (5-Column) -->
         <div class="keypad">
-            <!-- Row 1 -->
             <button class="key operator" data-key="(">(</button>
             <button class="key operator" data-key=")">)</button>
             <button class="key operator" data-key="%">%</button>
             <button class="key action span-col-2" data-key="AC">AC</button>
             
-            <!-- Row 2 -->
             <button class="key operator" data-key="+">+</button>
             <button class="key" data-key="7">7</button>
             <button class="key" data-key="8">8</button>
             <button class="key" data-key="9">9</button>
             <button class="key action span-row-2" data-key="BACK"><i data-lucide="delete"></i></button>
             
-            <!-- Row 3 -->
             <button class="key operator" data-key="-">-</button>
             <button class="key" data-key="4">4</button>
             <button class="key" data-key="5">5</button>
             <button class="key" data-key="6">6</button>
             
-            <!-- Row 4 -->
             <button class="key operator" data-key="*">×</button>
             <button class="key" data-key="1">1</button>
             <button class="key" data-key="2">2</button>
             <button class="key" data-key="3">3</button>
             <button class="key equal span-row-2" data-key="=">=</button>
             
-            <!-- Row 5 -->
             <button class="key operator" data-key="/">÷</button>
             <button class="key span-col-2" data-key="0">0</button>
             <button class="key" data-key=".">.</button>
@@ -123,6 +126,19 @@
             </div>
             <div class="menu-item" id="shareBtn">
                 <i data-lucide="share-2"></i> 複製與分享
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Picker Modal -->
+    <div class="menu-overlay" id="pickerOverlay">
+        <div class="side-menu" id="pickerContent">
+            <div class="menu-header">
+                <div style="font-size:1.2rem; font-weight:700;">選擇幣別</div>
+                <button class="icon-btn" id="closePickerBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="currency-list" id="currencyList">
+                <!-- Currencies will be injected here -->
             </div>
         </div>
     </div>

@@ -9,10 +9,26 @@ const state = {
     precision: parseInt(localStorage.getItem('precision')) || 2,
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
-    lastUpdated: localStorage.getItem('lastUpdated') || null
+    lastUpdated: localStorage.getItem('lastUpdated') || null,
+    pickingFor: null // 'from' or 'to'
 };
 
-// API Configurations (Corrected based on example)
+const COMMON_CURRENCIES = [
+    { code: 'TWD', name: '新台幣' },
+    { code: 'USD', name: '美金' },
+    { code: 'JPY', name: '日圓' },
+    { code: 'EUR', name: '歐元' },
+    { code: 'HKD', name: '港幣' },
+    { code: 'KRW', name: '韓元' },
+    { code: 'CNY', name: '人民幣' },
+    { code: 'GBP', name: '英鎊' },
+    { code: 'AUD', name: '澳幣' },
+    { code: 'CAD', name: '加幣' },
+    { code: 'SGD', name: '新加坡幣' },
+    { code: 'THB', name: '泰銖' }
+];
+
+// API Configurations
 const API_CONFIGS = {
     frankfurter: {
         url: (from, to) => `https://api.frankfurter.app/latest?from=${from}&to=${to}`,
@@ -36,7 +52,9 @@ const elements = {
     closeMenuBtn: document.getElementById('closeMenuBtn'),
     menuOverlay: document.getElementById('menuOverlay'),
     sideMenu: document.getElementById('sideMenu'),
-    currencyToggle: document.getElementById('currencyToggle'),
+    fromCurrencyBtn: document.getElementById('fromCurrencyBtn'),
+    toCurrencyBtn: document.getElementById('toCurrencyBtn'),
+    swapBtn: document.getElementById('swapBtn'),
     fromCurrency: document.getElementById('fromCurrency'),
     toCurrency: document.getElementById('toCurrency'),
     expressionDisplay: document.getElementById('expressionDisplay'),
@@ -53,7 +71,11 @@ const elements = {
     closeHistoryBtn: document.getElementById('closeHistoryBtn'),
     historyList: document.getElementById('historyList'),
     clearHistoryBtn: document.getElementById('clearHistoryBtn'),
-    shareBtn: document.getElementById('shareBtn')
+    shareBtn: document.getElementById('shareBtn'),
+    pickerOverlay: document.getElementById('pickerOverlay'),
+    pickerContent: document.getElementById('pickerContent'),
+    closePickerBtn: document.getElementById('closePickerBtn'),
+    currencyList: document.getElementById('currencyList')
 };
 
 // Initialize
@@ -64,6 +86,7 @@ function init() {
     updateUI();
     fetchRates(false);
     renderHistory();
+    renderCurrencyList();
 }
 
 function loadSettings() {
@@ -85,11 +108,20 @@ function applyTheme() {
 
 // Fetch Rates
 async function fetchRates(force = true) {
+    if (state.fromCurrency === state.toCurrency) {
+        state.exchangeRate = 1;
+        state.lastUpdated = Date.now();
+        updateStatus();
+        calculateCurrency();
+        return;
+    }
+
     const now = Date.now();
     const cacheKey = `rates_${state.fromCurrency}_${state.toCurrency}`;
     const cachedData = JSON.parse(localStorage.getItem(cacheKey));
 
     if (!force && cachedData && (now - cachedData.timestamp < 3600000)) {
+        console.log(`[Cache Hit] ${state.fromCurrency}/${state.toCurrency} = ${cachedData.rate}`);
         state.exchangeRate = cachedData.rate;
         state.lastUpdated = cachedData.timestamp;
         updateStatus();
@@ -103,12 +135,18 @@ async function fetchRates(force = true) {
     try {
         const config = API_CONFIGS[state.apiSource];
         const url = config.url(state.fromCurrency, state.toCurrency);
+        console.log(`[Fetch Start] Source: ${state.apiSource}, URL: ${url}`);
+        
         const response = await fetch(url);
-        if (!response.ok) throw new Error('API Error');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         const data = await response.json();
+        console.log(`[Fetch Success] Raw Data:`, data);
+        
         const rate = config.getPath(data, state.toCurrency, state.fromCurrency);
+        console.log(`[Rate Extracted] ${state.fromCurrency}/${state.toCurrency} = ${rate}`);
 
-        if (rate) {
+        if (rate !== undefined) {
             state.exchangeRate = rate;
             state.lastUpdated = Date.now();
             localStorage.setItem(cacheKey, JSON.stringify({ rate, timestamp: state.lastUpdated }));
@@ -117,8 +155,8 @@ async function fetchRates(force = true) {
             throw new Error('路徑解析失敗');
         }
     } catch (err) {
-        console.error('Fetch failed:', err);
-        elements.refreshStatus.innerHTML = '更新失敗<br>請稍後再試';
+        console.error('[Fetch Error]', err);
+        elements.refreshStatus.innerHTML = '更新失敗<br>請檢查網路';
     } finally {
         elements.refreshBtn.classList.remove('animate-spin');
         calculateCurrency();
@@ -144,11 +182,14 @@ function handleInput(key) {
         return;
     } else {
         const ops = ['+', '-', '*', '/', '.', '%'];
+        const visualOps = { '*': '×', '/': '÷' };
+        const displayKey = visualOps[key] || key;
+        
         const lastChar = state.expression.slice(-1);
-        if (ops.includes(key) && ops.includes(lastChar)) {
-            state.expression = state.expression.slice(0, -1) + key;
+        if (ops.includes(key) && (lastChar === '×' || lastChar === '÷' || ops.includes(lastChar))) {
+            state.expression = state.expression.slice(0, -1) + displayKey;
         } else {
-            state.expression += key;
+            state.expression += displayKey;
         }
     }
     evaluateExpression(false);
@@ -158,6 +199,7 @@ function handleInput(key) {
 function evaluateExpression(save = false) {
     if (!state.expression) {
         state.result = 0;
+        calculateCurrency();
         return;
     }
     try {
@@ -167,11 +209,15 @@ function evaluateExpression(save = false) {
             state.result = res;
             if (save) {
                 addToHistory(state.expression, state.result);
-                state.expression = res.toString();
+                state.expression = Number(res.toFixed(8)).toString();
             }
         }
     } catch (e) {
-        if (save) elements.expressionDisplay.innerHTML = '<span style="color:#e57373">格式錯誤</span>';
+        if (save) {
+            const originalExp = state.expression;
+            elements.expressionDisplay.innerHTML = '<span style="color:#e57373">格式錯誤</span>';
+            setTimeout(() => { if(state.expression === originalExp) updateUI(); }, 1500);
+        }
     }
     calculateCurrency();
 }
@@ -182,6 +228,7 @@ function calculateCurrency() {
 }
 
 function formatNumber(num) {
+    if (isNaN(num)) return '0';
     return Number(num.toFixed(state.precision)).toLocaleString(undefined, {
         minimumFractionDigits: 0,
         maximumFractionDigits: state.precision
@@ -195,6 +242,35 @@ function updateUI() {
     elements.fromUnit.innerText = state.fromCurrency;
     elements.toUnit.innerText = state.toCurrency;
 }
+
+// Currency Picker
+function renderCurrencyList() {
+    elements.currencyList.innerHTML = COMMON_CURRENCIES.map(c => `
+        <div class="currency-list-item" onclick="selectCurrency('${c.code}')">
+            <span>${c.code}</span>
+            <span style="font-size:0.8rem; opacity:0.6">${c.name}</span>
+        </div>
+    `).join('');
+}
+
+function openPicker(type) {
+    state.pickingFor = type;
+    elements.pickerOverlay.style.display = 'block';
+    setTimeout(() => elements.pickerContent.classList.add('active'), 10);
+}
+
+const closePicker = () => {
+    elements.pickerContent.classList.remove('active');
+    setTimeout(() => elements.pickerOverlay.style.display = 'none', 300);
+};
+
+window.selectCurrency = (code) => {
+    if (state.pickingFor === 'from') state.fromCurrency = code;
+    else state.toCurrency = code;
+    updateUI();
+    fetchRates(true);
+    closePicker();
+};
 
 // History
 function addToHistory(exp, res) {
@@ -210,7 +286,7 @@ function renderHistory() {
             <div style="font-size:0.8rem; color:var(--text-secondary)">${item.exp} = ${item.res} ${item.from}</div>
             <div style="font-weight:600; display:flex; justify-content:space-between">
                 <span>${formatNumber(item.res * item.rate)} ${item.to}</span>
-                <span style="font-size:0.7rem; opacity:0.6">1:${item.rate.toFixed(2)}</span>
+                <span style="font-size:0.7rem; opacity:0.6">1:${item.rate.toFixed(4)}</span>
             </div>
         </div>
     `).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
@@ -251,7 +327,11 @@ const closeMenu = () => {
 elements.closeMenuBtn.addEventListener('click', closeMenu);
 elements.menuOverlay.addEventListener('click', (e) => { if (e.target === elements.menuOverlay) closeMenu(); });
 
-elements.currencyToggle.addEventListener('click', () => {
+elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
+elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
+elements.closePickerBtn.addEventListener('click', closePicker);
+
+elements.swapBtn.addEventListener('click', () => {
     [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency];
     state.exchangeRate = 1 / state.exchangeRate;
     updateUI();
