@@ -10,11 +10,12 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .api-card { transition: all 0.3s ease; }
         .api-card.loading { opacity: 0.6; filter: grayscale(1); }
+        .json-box { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-3xl font-black text-slate-800 mb-2">🚀 API 效能對比測試儀</h1>
             <p class="text-slate-500">同時測試三個匯率來源，觀察速度與準確度差異</p>
@@ -48,6 +49,11 @@
                     <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div class="progress-bar h-full bg-blue-500 w-0 transition-all duration-500"></div>
                     </div>
+                    
+                    <details class="mt-4 pt-2 border-t border-slate-100">
+                        <summary class="text-[11px] font-bold text-slate-400 cursor-pointer hover:text-blue-500 uppercase tracking-wider">查看完整資訊</summary>
+                        <pre class="json-box mt-2 text-[10px] bg-slate-50 p-2 rounded-lg overflow-x-auto max-h-40 text-slate-600 border border-slate-100 whitespace-pre-wrap">尚未取得數據...</pre>
+                    </details>
                 </div>
             </div>
 
@@ -63,6 +69,11 @@
                     <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div class="progress-bar h-full bg-indigo-500 w-0 transition-all duration-500"></div>
                     </div>
+
+                    <details class="mt-4 pt-2 border-t border-slate-100">
+                        <summary class="text-[11px] font-bold text-slate-400 cursor-pointer hover:text-indigo-500 uppercase tracking-wider">查看完整資訊</summary>
+                        <pre class="json-box mt-2 text-[10px] bg-slate-50 p-2 rounded-lg overflow-x-auto max-h-40 text-slate-600 border border-slate-100 whitespace-pre-wrap">尚未取得數據...</pre>
+                    </details>
                 </div>
             </div>
 
@@ -78,6 +89,11 @@
                     <div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div class="progress-bar h-full bg-emerald-500 w-0 transition-all duration-500"></div>
                     </div>
+
+                    <details class="mt-4 pt-2 border-t border-slate-100">
+                        <summary class="text-[11px] font-bold text-slate-400 cursor-pointer hover:text-emerald-500 uppercase tracking-wider">查看完整資訊</summary>
+                        <pre class="json-box mt-2 text-[10px] bg-slate-50 p-2 rounded-lg overflow-x-auto max-h-40 text-slate-600 border border-slate-100 whitespace-pre-wrap">尚未取得數據...</pre>
+                    </details>
                 </div>
             </div>
         </div>
@@ -129,6 +145,7 @@
             const timeDisplay = card.querySelector('.time-display');
             const statusBadge = card.querySelector('.status-badge');
             const progress = card.querySelector('.progress-bar');
+            const jsonBox = card.querySelector('.json-box');
 
             const startTime = performance.now();
             
@@ -137,6 +154,7 @@
             statusBadge.innerText = '請求中...';
             statusBadge.className = 'status-badge px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-600';
             progress.style.width = '30%';
+            jsonBox.innerText = '正在獲取數據...';
 
             try {
                 const response = await fetch(config.url);
@@ -158,6 +176,9 @@
                 progress.style.width = '100%';
                 card.classList.remove('loading');
                 
+                // 顯示完整 JSON 資訊
+                jsonBox.innerText = JSON.stringify(data, null, 2);
+                
                 log(`${id} 測試完成: ${rate} (耗時 ${duration}ms)`, 'success');
                 return { id, duration, rate };
 
@@ -171,6 +192,8 @@
                 progress.classList.replace('bg-blue-500', 'bg-rose-500');
                 card.classList.remove('loading');
                 
+                jsonBox.innerText = `錯誤原因: ${err.message}`;
+                
                 log(`${id} 失敗: ${err.message}`, 'error');
                 return { id, error: true };
             }
@@ -178,8 +201,6 @@
 
         async function testAllApis() {
             const btn = document.getElementById('runAllBtn');
-            const amount = document.getElementById('testAmount').value;
-            
             btn.disabled = true;
             btn.innerHTML = `<span class="loader"></span> <span>並行測試中...</span>`;
             
