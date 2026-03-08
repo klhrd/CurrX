@@ -7,7 +7,7 @@ const state = {
     exchangeRate: 32.5,
     apiSource: localStorage.getItem('apiSource') || 'fawazahmed', // Priority 1
     precision: parseInt(localStorage.getItem('precision')) || 2,
-    displayMode: localStorage.getItem('displayMode') || 'en', // en, cn, both
+    displayMode: localStorage.getItem('displayMode') || 'en', // en, zh, both
     isDark: localStorage.getItem('theme') === 'dark',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
@@ -245,7 +245,7 @@ function renderCurrencyList() {
             <div class="currency-list-item" onclick="selectCurrency('${code}')">
                 <div style="display:flex; flex-direction:column">
                     <span style="font-weight:700">${code}</span>
-                    <span style="font-size:0.75rem; opacity:0.6">${data.cn}</span>
+                    <span style="font-size:0.75rem; opacity:0.6">${data.zh}</span>
                 </div>
                 <span style="font-size:0.75rem; opacity:0.6; align-self:center">${data.en}</span>
             </div>

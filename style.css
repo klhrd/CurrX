@@ -99,13 +99,14 @@ header {
 
 .icon-btn:hover { background: var(--btn-bg); }
 
-/* Display Section */
+/* Display Section - Optimized for spacing */
 .display-section {
-    padding: 20px;
+    padding: 20px 24px;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: space-around; /* Distribute space more evenly to avoid big gaps */
+    max-height: 40vh; /* Limit height growth */
 }
 
 .currency-bar-container {
@@ -113,17 +114,16 @@ header {
     align-items: center;
     justify-content: space-between;
     background: var(--btn-bg);
-    padding: 8px 12px;
-    border-radius: 16px;
-    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 20px;
 }
 
 .currency-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border-radius: 12px;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 14px;
     cursor: pointer;
     transition: background 0.2s;
 }
@@ -131,38 +131,38 @@ header {
 .currency-item:hover { background: var(--btn-active); }
 
 .swap-btn {
-    padding: 10px;
+    padding: 12px;
     cursor: pointer;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--accent-color);
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
 }
 
-.swap-btn:active { transform: rotate(180deg); }
+.swap-btn:active { transform: rotate(180deg) scale(0.9); }
 
-.currency-name { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+.currency-name { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
 
 .expression-container {
     min-height: 40px;
-    margin-bottom: 10px;
     text-align: right;
+    margin-top: 10px;
 }
 
 .expression {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: var(--text-secondary);
     word-break: break-all;
-    min-height: 1.4rem;
+    min-height: 1.5rem;
 }
 
 .results {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 8px;
     width: 100%;
 }
 
@@ -173,45 +173,46 @@ header {
 }
 
 .res-val {
-    font-size: clamp(1.2rem, 8vw, 2.2rem);
+    font-size: clamp(1.4rem, 8vw, 2.4rem);
     font-weight: 500;
     letter-spacing: -1px;
     white-space: nowrap;
 }
 
 .res-unit {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--text-secondary);
-    margin-left: 8px;
-    min-width: 45px;
+    margin-left: 10px;
+    min-width: 50px;
     font-weight: 600;
 }
 
 .res-row.primary .res-val {
-    font-size: clamp(1.8rem, 12vw, 3.2rem);
+    font-size: clamp(2rem, 12vw, 3.5rem);
     font-weight: 700;
     color: var(--accent-color);
 }
 
 .res-row.primary .res-unit {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--accent-color);
 }
 
-/* Keypad Section (5-Column Grid) */
+/* Keypad Section */
 .keypad {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    padding: 15px;
+    gap: 12px;
+    padding: 20px;
     background: var(--bg-color);
+    border-top: 1px solid var(--grid-line);
 }
 
 .key {
     aspect-ratio: 1;
     border: none;
-    border-radius: 12px;
-    font-size: 1.3rem;
+    border-radius: 16px;
+    font-size: 1.4rem;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -220,15 +221,14 @@ header {
     transition: all 0.1s ease;
     background: var(--key-num-bg);
     color: var(--text-main);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.key:active { transform: scale(0.92); background: var(--btn-active); }
+.key:active { transform: scale(0.9); background: var(--btn-active); }
 
 .key.operator { background: var(--key-op-bg); color: var(--accent-color); }
 .key.action { background: var(--key-op-bg); color: #e57373; }
 
-/* Key Spans */
 .key.span-col-2 { grid-column: span 2; aspect-ratio: auto; height: 100%; }
 .key.span-row-2 { grid-row: span 2; aspect-ratio: auto; height: 100%; }
 
@@ -237,7 +237,7 @@ header {
     color: var(--key-equal-text);
 }
 
-/* Side Menu / Overlays */
+/* Overlays */
 .menu-overlay, .history-overlay {
     position: fixed;
     top: 0; left: 0;
@@ -252,7 +252,7 @@ header {
 .side-menu {
     position: absolute;
     top: 0; right: 0;
-    width: 300px; height: 100%;
+    width: 320px; height: 100%;
     background: var(--bg-color);
     padding: 40px 24px;
     transform: translateX(100%);
@@ -263,29 +263,28 @@ header {
 
 .menu-item {
     display: flex; align-items: center; gap: 12px;
-    padding: 14px 0; border-bottom: 1px solid var(--grid-line);
+    padding: 16px 0; border-bottom: 1px solid var(--grid-line);
     cursor: pointer;
 }
 
 .menu-item select {
     margin-left: auto; background: var(--btn-bg);
-    border: none; padding: 4px 8px; border-radius: 6px;
+    border: none; padding: 6px 10px; border-radius: 8px;
     color: var(--text-main);
+    font-family: inherit;
 }
 
 .currency-list {
-    margin-top: 10px;
+    margin-top: 15px;
     max-height: calc(100% - 80px);
     overflow-y: auto;
 }
 
 .currency-list-item {
-    padding: 15px 10px;
+    padding: 18px 12px;
     border-bottom: 1px solid var(--grid-line);
     cursor: pointer;
-    font-weight: 500;
-    display: flex;
-    justify-content: space-between;
+    transition: background 0.2s;
 }
 
 .currency-list-item:active { background: var(--btn-active); }
@@ -293,10 +292,10 @@ header {
 .history-overlay { z-index: 110; align-items: flex-end; }
 
 .history-content {
-    width: 100%; height: 75%;
+    width: 100%; height: 80%;
     background: var(--bg-color);
-    border-radius: 24px 24px 0 0;
-    padding: 24px;
+    border-radius: 28px 28px 0 0;
+    padding: 28px;
     display: flex; flex-direction: column;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -304,22 +303,23 @@ header {
 
 .history-content.active { transform: translateY(0); }
 
-.history-list { flex-grow: 1; overflow-y: auto; margin: 15px 0; }
+.history-list { flex-grow: 1; overflow-y: auto; margin: 20px 0; }
 
 .history-card {
-    background: var(--btn-bg); padding: 16px;
-    border-radius: 12px; margin-bottom: 12px;
+    background: var(--btn-bg); padding: 18px;
+    border-radius: 16px; margin-bottom: 14px;
 }
 
 /* Desktop Fixes */
 @media (min-width: 1024px) {
     body { align-items: center; padding: 40px; }
     .app-container {
-        max-width: 800px; flex-direction: row; height: 600px;
-        border-radius: 24px; overflow: hidden;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        max-width: 900px; flex-direction: row; height: 650px;
+        border-radius: 30px; overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        min-height: auto;
     }
-    .display-section { width: 40%; border-right: 1px solid var(--grid-line); }
-    .keypad { width: 60%; align-content: center; }
+    .display-section { width: 40%; border-right: 1px solid var(--grid-line); max-height: 100%; }
+    .keypad { width: 60%; align-content: center; border-top: none; }
     header { position: absolute; width: 40%; border-right: 1px solid var(--grid-line); }
 }
