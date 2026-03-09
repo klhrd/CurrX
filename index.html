@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CurrX v0.2.1</title>
+    <title>CurrX v0.2.2</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#5c6bc0">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -104,23 +104,27 @@
             </div>
             
             <div class="menu-item" id="historyBtn"><i data-lucide="history"></i> 歷史紀錄回溯</div>
-            <div class="menu-item">
-                <i data-lucide="landmark"></i> 匯率來源
-                <select id="apiSourceSelect">
-                    <option value="fawazahmed">Fawazahmed0</option>
-                    <option value="exchangerate">ExchangeRate</option>
-                    <option value="frankfurter">Frankfurter</option>
-                </select>
-            </div>
+            
             <div class="menu-item">
                 <i data-lucide="hash"></i> 小數點位數
                 <select id="precisionSelect">
                     <option value="0">0 位</option>
+                    <option value="1">1 位</option>
                     <option value="2">2 位</option>
                     <option value="3">3 位</option>
                     <option value="4">4 位</option>
                 </select>
             </div>
+
+            <div class="menu-item">
+                <i data-lucide="list"></i> 數值格式
+                <select id="numFormatSelect">
+                    <option value="standard">標準 (1,234,567)</option>
+                    <option value="abbrev">簡寫 (1.2M)</option>
+                    <option value="scientific">科學記號 (1.2E+6)</option>
+                </select>
+            </div>
+
             <div class="menu-item">
                 <i data-lucide="layout"></i> 顯示語言
                 <select id="displayModeSelect">
@@ -129,6 +133,7 @@
                     <option value="both">兩者併列</option>
                 </select>
             </div>
+
             <div class="menu-item">
                 <i data-lucide="palette"></i> 色彩主題
                 <select id="themeModeSelect">
@@ -137,13 +142,23 @@
                     <option value="dark">深色模式</option>
                 </select>
             </div>
+
+            <div class="menu-item">
+                <i data-lucide="landmark"></i> 匯率來源
+                <select id="apiSourceSelect">
+                    <option value="fawazahmed">Fawazahmed0</option>
+                    <option value="exchangerate">ExchangeRate</option>
+                    <option value="frankfurter">Frankfurter</option>
+                </select>
+            </div>
+
             <div class="menu-item">
                 <i data-lucide="maximize"></i> 自動全螢幕
                 <input type="checkbox" id="fullscreenCheckbox" style="width: 20px; height: 20px;">
             </div>
             <div class="menu-item" id="shareBtn"><i data-lucide="share-2"></i> 複製與分享</div>
             
-            <div class="menu-footer">CurrX v0.2.1</div>
+            <div class="menu-footer">CurrX v0.2.2</div>
         </div>
     </div>
 

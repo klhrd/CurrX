@@ -44,6 +44,7 @@ body {
     display: flex;
     justify-content: center;
     min-height: 100vh;
+    overflow: hidden; /* Prevent body scroll */
 }
 
 .app-container {
@@ -51,7 +52,7 @@ body {
     max-width: 500px;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
     background: var(--bg-color);
 }
 
@@ -61,7 +62,7 @@ header {
     justify-content: space-between;
     align-items: center;
     height: 60px;
-    z-index: 10;
+    flex-shrink: 0;
 }
 
 .brand { font-weight: 800; font-size: 1.5rem; color: var(--accent-color); letter-spacing: -1px; }
@@ -79,13 +80,12 @@ header {
     display: flex;
     flex-direction: column;
     padding: 0 24px;
-    overflow: hidden; /* Prevent body scroll */
 }
 
 .display-block {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
     padding-top: 10px;
     flex-grow: 1;
     justify-content: space-around;
@@ -99,6 +99,7 @@ header {
     padding: 8px;
     border-radius: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    flex-shrink: 0;
 }
 
 .currency-item {
@@ -114,20 +115,19 @@ header {
 
 .currency-name { font-weight: 700; font-size: 1rem; }
 
-/* Result Area - Robust long number handling */
+/* Result Area */
 .result-area {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     margin-top: auto;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
     width: 100%;
-    overflow: hidden;
 }
 
 .expression {
     font-size: 1.4rem; color: var(--text-secondary);
-    word-break: break-all; min-height: 1.8rem; margin-bottom: 4px;
+    min-height: 1.8rem; margin-bottom: 4px;
     width: 100%; text-align: right;
     overflow-x: auto; white-space: nowrap;
 }
@@ -139,41 +139,15 @@ header {
     flex-direction: column; 
     align-items: flex-end;
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
 }
 .results::-webkit-scrollbar { display: none; }
 
-.res-row { 
-    display: flex; 
-    align-items: baseline; 
-    white-space: nowrap;
-    max-width: 100%;
-}
+.res-row { display: flex; align-items: baseline; white-space: nowrap; max-width: 100%; }
+.res-val { font-size: clamp(1.5rem, 8vw, 2.5rem); font-weight: 500; letter-spacing: -1px; }
+.res-unit { font-size: 0.85rem; color: var(--text-secondary); margin-left: 8px; font-weight: 600; flex-shrink: 0; }
 
-.res-val { 
-    font-size: clamp(1.5rem, 8vw, 2.5rem); 
-    font-weight: 500; 
-    letter-spacing: -1px;
-}
-
-.res-unit { 
-    font-size: 0.85rem; 
-    color: var(--text-secondary); 
-    margin-left: 8px; 
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.res-row.primary .res-val { 
-    font-size: clamp(2rem, 12vw, 3.8rem); 
-    font-weight: 700; 
-    color: var(--accent-color); 
-}
-
-.res-row.primary .res-unit { 
-    font-size: 1.1rem; 
-    color: var(--accent-color); 
-}
+.res-row.primary .res-val { font-size: clamp(2rem, 12vw, 3.8rem); font-weight: 700; color: var(--accent-color); }
+.res-row.primary .res-unit { font-size: 1.1rem; color: var(--accent-color); }
 
 /* Keypad */
 .keypad {
@@ -182,6 +156,7 @@ header {
     gap: 10px;
     padding: 15px 20px 30px 20px;
     background: var(--bg-color);
+    flex-shrink: 0;
 }
 
 .key {
@@ -205,7 +180,7 @@ header {
 
 .key.equal { background: var(--key-equal-bg); color: var(--key-equal-text); box-shadow: 0 8px 15px rgba(92, 107, 192, 0.2); }
 
-/* Overlays */
+/* Overlays - Fixed Scrolling */
 .menu-overlay, .history-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.3); display: none; z-index: 100;
@@ -220,58 +195,27 @@ header {
 }
 .side-menu.active { transform: translateX(0); }
 
-.menu-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
+.menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
 
-.menu-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 16px 0; border-bottom: 1px solid var(--grid-line);
-    cursor: pointer;
-}
-
-.menu-item select {
-    margin-left: auto;
-    background: var(--card-bg);
-    border: none;
-    padding: 6px 10px;
-    border-radius: 8px;
-    color: var(--text-main);
-    font-family: inherit;
-    font-weight: 600;
-}
-
+.menu-item { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--grid-line); cursor: pointer; flex-shrink: 0; }
+.menu-item select { margin-left: auto; background: var(--card-bg); border: none; padding: 6px 10px; border-radius: 8px; color: var(--text-main); font-family: inherit; font-weight: 600; }
 .menu-item input[type="checkbox"] { margin-left: auto; width: 18px; height: 18px; }
 
-.menu-footer { margin-top: auto; text-align: center; padding: 20px; opacity: 0.3; font-size: 0.7rem; font-weight: 600; }
+.menu-footer { margin-top: auto; text-align: center; padding: 20px; opacity: 0.3; font-size: 0.7rem; font-weight: 600; flex-shrink: 0; }
+
+.currency-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+.currency-list-item { padding: 18px 12px; border-bottom: 1px solid var(--grid-line); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
 
 .history-overlay { align-items: flex-end; }
-.history-content {
-    width: 100%; height: 85%; background: var(--bg-color);
-    border-radius: 32px 32px 0 0; padding: 30px;
-    display: flex; flex-direction: column;
-    transform: translateY(100%); transition: transform 0.3s ease;
-}
+.history-content { width: 100%; height: 85%; background: var(--bg-color); border-radius: 32px 32px 0 0; padding: 30px; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s ease; }
 .history-content.active { transform: translateY(0); }
 .history-list { flex-grow: 1; overflow-y: auto; margin: 20px 0; }
 .history-card { background: var(--card-bg); padding: 20px; border-radius: 20px; margin-bottom: 15px; }
 
 /* Desktop Fixes */
 @media (min-width: 1024px) {
-    body { align-items: center; padding: 40px; }
-    .app-container {
-        max-width: 900px; 
-        flex-direction: row; 
-        height: 700px;
-        min-height: auto;
-        border-radius: 40px; 
-        overflow: hidden;
-        box-shadow: 0 30px 100px rgba(0,0,0,0.1);
-        border: 1px solid var(--grid-line);
-    }
+    body { align-items: center; padding: 40px; overflow: auto; }
+    .app-container { max-width: 900px; flex-direction: row; height: 700px; border-radius: 40px; overflow: hidden; box-shadow: 0 30px 100px rgba(0,0,0,0.1); border: 1px solid var(--grid-line); }
     .main-content { width: 42%; border-right: 1px solid var(--grid-line); padding: 30px; }
     header { position: absolute; width: 42%; border-right: 1px solid var(--grid-line); background: transparent; }
     .keypad { width: 58%; padding: 40px; border-top: none; align-content: center; }
