@@ -118,8 +118,10 @@ function updateHash() {
 }
 
 function loadSettings() {
-    elements.fromCurrency.value = state.fromCurrency;
-    elements.toCurrency.value = state.toCurrency;
+    if (elements.fromCurrency.tagName === 'SELECT') {
+        elements.fromCurrency.value = state.fromCurrency;
+        elements.toCurrency.value = state.toCurrency;
+    }
     elements.precisionSelect.value = state.precision;
     elements.numFormatSelect.value = state.numFormat;
     elements.apiSourceSelect.value = state.apiSource;
@@ -411,7 +413,10 @@ elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
 elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
 elements.closePickerBtn.addEventListener('click', closePicker);
 elements.currencySearch.addEventListener('input', (e) => { state.searchQuery = e.target.value; renderCurrencyList(); });
-elements.swapBtn.addEventListener('click', () => { [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency]; state.exchangeRate = 1 / state.exchangeRate; updateUI(); fetchRates(false); });
+elements.swapBtn.addEventListener('click', () => { 
+    [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency]; 
+    updateHash(); // 透過更新 Hash 觸發 hashchange 自動 fetchRates
+});
 elements.precisionSelect.addEventListener('change', (e) => { state.precision = parseInt(e.target.value); saveSettings(); calculateCurrency(); });
 elements.numFormatSelect.addEventListener('change', (e) => { state.numFormat = e.target.value; saveSettings(); calculateCurrency(); });
 elements.apiSourceSelect.addEventListener('change', (e) => { state.apiSource = e.target.value; saveSettings(); fetchRates(true); });
