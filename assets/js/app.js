@@ -2,8 +2,8 @@
 const state = {
     expression: '',
     result: 0,
-    fromCurrency: 'USD',
-    toCurrency: 'TWD',
+    fromCurrency: localStorage.getItem('fromCurrency') || 'USD',
+    toCurrency: localStorage.getItem('toCurrency') || 'TWD',
     exchangeRate: 32.5,
     apiSource: localStorage.getItem('apiSource') || 'fawazahmed',
     precision: parseInt(localStorage.getItem('precision')) || 2,
@@ -118,6 +118,8 @@ function updateHash() {
 }
 
 function loadSettings() {
+    elements.fromCurrency.value = state.fromCurrency;
+    elements.toCurrency.value = state.toCurrency;
     elements.precisionSelect.value = state.precision;
     elements.numFormatSelect.value = state.numFormat;
     elements.apiSourceSelect.value = state.apiSource;
@@ -127,6 +129,8 @@ function loadSettings() {
 }
 
 function saveSettings() {
+    localStorage.setItem('fromCurrency', state.fromCurrency);
+    localStorage.setItem('toCurrency', state.toCurrency);
     localStorage.setItem('apiSource', state.apiSource);
     localStorage.setItem('precision', state.precision);
     localStorage.setItem('numFormat', state.numFormat);
@@ -355,6 +359,7 @@ const closePicker = () => {
 window.selectCurrency = (code) => {
     if (state.pickingFor === 'from') state.fromCurrency = code;
     else state.toCurrency = code;
+    saveSettings();
     updateUI();
     fetchRates(true);
     closePicker();
