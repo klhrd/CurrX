@@ -17,7 +17,17 @@ const state = {
     searchQuery: ''
 };
 
-const CURRENCY_LIST_CODES = Object.keys(CURRENCY_DICT);
+// 安全取得幣別字典列表
+const CURRENCY_LIST_CODES = typeof CURRENCY_DICT !== 'undefined' ? Object.keys(CURRENCY_DICT) : [];
+
+// 安全取得幣別顯示名稱
+function getCurrencyName(code, mode) {
+    if (typeof CURRENCY_DICT === 'undefined' || !CURRENCY_DICT[code]) return code;
+    const data = CURRENCY_DICT[code];
+    if (mode === 'zh') return data.zh || code;
+    if (mode === 'both') return `${code} ${data.zh || ''}`;
+    return code; // default 'en'
+}
 
 // API Configurations
 const API_CONFIGS = {
@@ -75,7 +85,7 @@ const elements = {
 
 // Initialize
 function init() {
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
     parseHash(); // Parse URL hash first
     applyTheme();
     loadSettings();
@@ -105,8 +115,10 @@ function parseHash() {
     
     const parts = hash.split(/[-/]/);
     if (parts.length === 2) {
-        if (CURRENCY_DICT[parts[0]]) state.fromCurrency = parts[0];
-        if (CURRENCY_DICT[parts[1]]) state.toCurrency = parts[1];
+        if (typeof CURRENCY_DICT !== 'undefined') {
+            if (CURRENCY_DICT[parts[0]]) state.fromCurrency = parts[0];
+            if (CURRENCY_DICT[parts[1]]) state.toCurrency = parts[1];
+        }
     }
 }
 
@@ -118,10 +130,7 @@ function updateHash() {
 }
 
 function loadSettings() {
-    if (elements.fromCurrency.tagName === 'SELECT') {
-        elements.fromCurrency.value = state.fromCurrency;
-        elements.toCurrency.value = state.toCurrency;
-    }
+    // 修正：僅對真正的 <select> 綁定 .value
     elements.precisionSelect.value = state.precision;
     elements.numFormatSelect.value = state.numFormat;
     elements.apiSourceSelect.value = state.apiSource;
@@ -151,7 +160,8 @@ function applyTheme() {
     }
     document.body.classList.toggle('dark-mode', isDark);
     const themeColor = isDark ? '#000000' : '#5c6bc0';
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', themeColor);
 }
 
 function attemptFullscreen() {
@@ -193,7 +203,7 @@ async function fetchRates(force = true) {
         const data = await response.json();
         const rate = config.getPath(data, state.toCurrency, state.fromCurrency);
 
-        if (rate !== undefined) {
+        if (rate !== undefined && !isNaN(rate)) {
             state.exchangeRate = rate;
             state.lastUpdated = Date.now();
             localStorage.setItem(cacheKey, JSON.stringify({ rate, timestamp: state.lastUpdated }));
@@ -259,7 +269,7 @@ function evaluateExpression(save = false) {
     try {
         let clean = state.expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
         const res = math.evaluate(clean);
-        if (typeof res === 'number') {
+        if (typeof res === 'number' && !isNaN(res)) {
             state.result = res;
             if (save) {
                 addToHistory(state.expression, state.result);
@@ -267,6 +277,7 @@ function evaluateExpression(save = false) {
             }
         }
     } catch (e) {
+        // 輸入過程中算式不完整時靜默忽略；只有按下 `=` (save=true) 時才提示格式錯誤
         if (save) {
             const originalExp = state.expression;
             elements.expressionDisplay.innerHTML = '<span style="color:#ff7675">格式錯誤</span>';
@@ -282,7 +293,7 @@ function calculateCurrency() {
     
     requestAnimationFrame(() => {
         const results = document.querySelector('.results');
-        results.scrollLeft = results.scrollWidth;
+        if (results) results.scrollLeft = results.scrollWidth;
     });
 }
 
@@ -296,8 +307,8 @@ function formatNumber(num) {
     if (state.numFormat === 'abbrev' && Math.abs(num) >= 1000) {
         const units = ['', 'K', 'M', 'B', 'T'];
         const unitIndex = Math.floor(Math.log10(Math.abs(num)) / 3);
-        const scaled = num / Math.pow(1000, unitIndex);
-        return scaled.toFixed(state.precision) + units[unitIndex];
+        const scaled = num / Math.pow(1000, Math.min(unitIndex, units.length - 1));
+        return scaled.toFixed(state.precision) + (units[unitIndex] || '');
     }
 
     return Number(num.toFixed(state.precision)).toLocaleString(undefined, {
@@ -314,13 +325,14 @@ function updateUI() {
     elements.toUnit.innerText = state.toCurrency;
     
     const expCont = document.getElementById('expressionDisplay');
-    expCont.scrollLeft = expCont.scrollWidth;
+    if (expCont) expCont.scrollLeft = expCont.scrollWidth;
     
     updateHash();
 }
 
 // Currency Picker
 function renderCurrencyList() {
+    if (typeof CURRENCY_DICT === 'undefined') return;
     const query = state.searchQuery.toLowerCase();
     const filteredCodes = CURRENCY_LIST_CODES.filter(code => {
         const data = CURRENCY_DICT[code];
@@ -413,10 +425,15 @@ elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
 elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
 elements.closePickerBtn.addEventListener('click', closePicker);
 elements.currencySearch.addEventListener('input', (e) => { state.searchQuery = e.target.value; renderCurrencyList(); });
+
+// 修正：Swap 正確觸發 Hash 更新並拉取完整匯率
 elements.swapBtn.addEventListener('click', () => { 
     [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency]; 
-    updateHash(); // 透過更新 Hash 觸發 hashchange 自動 fetchRates
+    saveSettings();
+    updateUI(); 
+    fetchRates(true); 
 });
+
 elements.precisionSelect.addEventListener('change', (e) => { state.precision = parseInt(e.target.value); saveSettings(); calculateCurrency(); });
 elements.numFormatSelect.addEventListener('change', (e) => { state.numFormat = e.target.value; saveSettings(); calculateCurrency(); });
 elements.apiSourceSelect.addEventListener('change', (e) => { state.apiSource = e.target.value; saveSettings(); fetchRates(true); });
@@ -433,4 +450,5 @@ elements.shareBtn.addEventListener('click', () => {
     else navigator.clipboard.writeText(text).then(() => alert('已複製'));
 });
 
+// 啟動應用程式
 init();
