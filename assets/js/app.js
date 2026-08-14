@@ -86,7 +86,7 @@ const elements = {
 // Initialize
 function init() {
     if (window.lucide) lucide.createIcons();
-    parseHash(); // Parse URL hash first
+    parseHash(); 
     applyTheme();
     loadSettings();
     updateUI();
@@ -94,8 +94,15 @@ function init() {
     renderHistory();
     renderCurrencyList();
     
-    if (state.isFullscreen) {
-        document.addEventListener('click', attemptFullscreen, { once: true });
+    // 只有在「不是 PWA standalone 模式」且「使用者開啟全螢幕設定」時才綁定
+    if (state.isFullscreen && !isRunningInPWA()) {
+        // 使用 capture 階段或是直接在用戶第一次互動時順便執行，不阻斷 click
+        const handleFirstInteraction = () => {
+            attemptFullscreen();
+            document.removeEventListener('pointerdown', handleFirstInteraction);
+        };
+        // 改用 pointerdown 可以比 click 更早一步調用，不會吃掉 click 事件
+        document.addEventListener('pointerdown', handleFirstInteraction, { once: true });
     }
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -164,9 +171,21 @@ function applyTheme() {
     if (metaTheme) metaTheme.setAttribute('content', themeColor);
 }
 
-function attemptFullscreen() {
-    if (state.isFullscreen && !document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+// 檢查是否已經處於 PWA 獨立視窗模式 (Standalone)
+function isRunningInPWA() {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone === true;
+}
+
+// 嘗試全螢幕 (新增保護，避免阻斷點擊)
+function attemptFullscreen(e) {
+    // 如果已經在全螢幕或已經是 PWA，則直接跳過
+    if (document.fullscreenElement || isRunningInPWA()) return;
+
+    if (state.isFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+            // 靜默忽略不支援全螢幕的裝置 (如 iOS)
+        });
     }
 }
 
