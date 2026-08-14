@@ -10,7 +10,7 @@ const state = {
     displayMode: localStorage.getItem('displayMode') || 'en',
     themeMode: localStorage.getItem('themeMode') || 'system',
     numFormat: localStorage.getItem('numFormat') || 'standard', // standard, abbrev, scientific
-    isFullscreen: localStorage.getItem('isFullscreen') !== 'false',
+    isFullscreen: localStorage.getItem('isFullscreen') === 'true',
     history: JSON.parse(localStorage.getItem('history')) || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
     pickingFor: null,

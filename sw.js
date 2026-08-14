@@ -1,4 +1,9 @@
-const CACHE_NAME = 'currx-v1';
+// 修改前
+// const CACHE_NAME = 'currx-v1';
+
+// 修改後：升級版本號以刷新快取
+const CACHE_NAME = 'currx-v2';
+
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +21,23 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     })
+  );
+  // 讓新版的 Service Worker 立即生效
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  // 自動清理舊版本的快取 (v1)
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
