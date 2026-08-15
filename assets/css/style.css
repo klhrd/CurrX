@@ -201,7 +201,7 @@ header {
 .menu-item select { margin-left: auto; background: var(--card-bg); border: none; padding: 6px 10px; border-radius: 8px; color: var(--text-main); font-family: inherit; font-weight: 600; }
 .menu-item input[type="checkbox"] { margin-left: auto; width: 18px; height: 18px; }
 
-.menu-footer { margin-top: auto; text-align: center; padding: 20px; opacity: 0.3; font-size: 0.7rem; font-weight: 600; flex-shrink: 0; }
+.menu-footer { margin-top: auto; text-align: center; padding: 20px; opacity: 0.3; font-size: 0.7rem; font-weight: 600; flex-shrink: 0; text-decoration: none; color: inherit; }
 
 .currency-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
 .currency-list-item { padding: 18px 12px; border-bottom: 1px solid var(--grid-line); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
