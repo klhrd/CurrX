@@ -1,16 +1,17 @@
-// 修改前
-// const CACHE_NAME = 'currx-v1';
-
-// 修改後：升級版本號以刷新快取
 const CACHE_NAME = 'currx-v2';
 
-const ASSETS = [
+// 1. 本地核心檔案（這些必須 100% 成功）
+const CORE_ASSETS = [
   './',
   './index.html',
   './assets/css/style.css',
   './assets/js/app.js',
   './assets/js/currencies.js',
-  './manifest.json',
+  './manifest.json'
+];
+
+// 2. 外部第三方資源（採取逐個下載，失敗不影響 SW 安裝）
+const EXTERNAL_ASSETS = [
   'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap',
   'https://unpkg.com/lucide@latest',
   'https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js'
@@ -18,16 +19,24 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // 先強制成功快取核心本地檔案
+      await cache.addAll(CORE_ASSETS);
+      
+      // 外部資源使用 Promise.allSettled 逐一快取，就算失敗也不中斷 install
+      await Promise.allSettled(
+        EXTERNAL_ASSETS.map((url) => 
+          fetch(url, { mode: 'cors' })
+            ? cache.add(url)
+            : Promise.reject()
+        )
+      );
     })
   );
-  // 讓新版的 Service Worker 立即生效
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  // 自動清理舊版本的快取 (v1)
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -44,6 +53,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
+      // 快取有就回傳快取，沒有就發起網路請求
       return response || fetch(event.request);
     })
   );
