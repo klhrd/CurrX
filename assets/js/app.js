@@ -1,3 +1,12 @@
+// 安全讀取 localStorage JSON(避免損毀資料導致啟動失敗)
+function safeParse(key) {
+    try {
+        return JSON.parse(localStorage.getItem(key));
+    } catch (e) {
+        return null;
+    }
+}
+
 // State Management
 const state = {
     expression: '',
@@ -11,7 +20,7 @@ const state = {
     themeMode: localStorage.getItem('themeMode') || 'system',
     numFormat: localStorage.getItem('numFormat') || 'standard', // standard, abbrev, scientific
     isFullscreen: localStorage.getItem('isFullscreen') === 'true',
-    history: JSON.parse(localStorage.getItem('history')) || [],
+    history: safeParse('history') || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
     pickingFor: null,
     searchQuery: ''
@@ -19,6 +28,10 @@ const state = {
 
 // 安全取得幣別字典列表
 const CURRENCY_LIST_CODES = typeof CURRENCY_DICT !== 'undefined' ? Object.keys(CURRENCY_DICT) : [];
+if (!Array.isArray(state.history)) state.history = [];
+
+// HTML 跳脫,防止 XSS
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '\u0026amp;', '<': '\u0026lt;', '>': '\u0026gt;', '"': '\u0026quot;', "'": '\u0026#39;' }[c]));
 
 // 安全取得幣別顯示名稱
 function getCurrencyName(code, mode) {
@@ -201,9 +214,9 @@ async function fetchRates(force = true) {
 
     const now = Date.now();
     const cacheKey = `rates_${state.fromCurrency}_${state.toCurrency}_${state.apiSource}`;
-    const cachedData = JSON.parse(localStorage.getItem(cacheKey));
+    const cachedData = safeParse(cacheKey);
 
-    if (!force && cachedData && (now - cachedData.timestamp < 3600000)) {
+    if (!force && cachedData && typeof cachedData.rate === 'number' && !isNaN(cachedData.rate) && (now - cachedData.timestamp < 3600000)) {
         state.exchangeRate = cachedData.rate;
         state.lastUpdated = cachedData.timestamp;
         updateStatus();
@@ -363,12 +376,12 @@ function renderCurrencyList() {
     elements.currencyList.innerHTML = filteredCodes.map(code => {
         const data = CURRENCY_DICT[code];
         return `
-            <div class="currency-list-item" onclick="selectCurrency('${code}')">
+            <div class="currency-list-item" data-code="${esc(code)}">
                 <div style="display:flex; flex-direction:column">
-                    <span style="font-weight:700">${code}</span>
-                    <span style="font-size:0.75rem; opacity:0.6">${data.zh || ''}</span>
+                    <span style="font-weight:700">${esc(code)}</span>
+                    <span style="font-size:0.75rem; opacity:0.6">${esc(data.zh || '')}</span>
                 </div>
-                <span style="font-size:0.75rem; opacity:0.6; align-self:center">${data.en || ''}</span>
+                <span style="font-size:0.75rem; opacity:0.6; align-self:center">${esc(data.en || '')}</span>
             </div>
         `;
     }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">找不到結果</div>';
@@ -407,15 +420,18 @@ function addToHistory(exp, res) {
 }
 
 function renderHistory() {
-    elements.historyList.innerHTML = state.history.map(item => `
-        <div class="history-card" onclick="loadHistoryItem(${item.id})">
-            <div style="font-size:0.75rem; color:var(--text-secondary)">${item.exp} = ${item.res} ${item.from}</div>
+    elements.historyList.innerHTML = state.history.map(item => {
+        const rate = Number(item.rate) || 0;
+        return `
+        <div class="history-card" data-id="${esc(item.id)}">
+            <div style="font-size:0.75rem; color:var(--text-secondary)">${esc(item.exp)} = ${esc(item.res)} ${esc(item.from)}</div>
             <div style="font-weight:600; display:flex; justify-content:space-between">
-                <span>${formatNumber(item.res * item.rate)} ${item.to}</span>
-                <span style="font-size:0.65rem; opacity:0.6">1:${item.rate.toFixed(4)} (${item.api})</span>
+                <span>${esc(formatNumber(Number(item.res) * rate))} ${esc(item.to)}</span>
+                <span style="font-size:0.65rem; opacity:0.6">1:${rate.toFixed(4)} (${esc(item.api)})</span>
             </div>
         </div>
-    `).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
+    `;
+    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
 }
 
 window.loadHistoryItem = (id) => {
@@ -444,6 +460,16 @@ elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
 elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
 elements.closePickerBtn.addEventListener('click', closePicker);
 elements.currencySearch.addEventListener('input', (e) => { state.searchQuery = e.target.value; renderCurrencyList(); });
+
+// 事件委託:取代 inline onclick,避免 HTML 屬性注入
+elements.currencyList.addEventListener('click', (e) => {
+    const item = e.target.closest('.currency-list-item');
+    if (item && item.dataset.code) selectCurrency(item.dataset.code);
+});
+elements.historyList.addEventListener('click', (e) => {
+    const card = e.target.closest('.history-card');
+    if (card) loadHistoryItem(Number(card.dataset.id));
+});
 
 // 修正：Swap 正確觸發 Hash 更新並拉取完整匯率
 elements.swapBtn.addEventListener('click', () => { 

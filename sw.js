@@ -1,4 +1,4 @@
-const CACHE_NAME = 'currx-v2';
+const CACHE_NAME = 'currx-v3';
 
 // 1. 本地核心檔案（這些必須 100% 成功）
 const CORE_ASSETS = [
@@ -12,8 +12,8 @@ const CORE_ASSETS = [
 
 // 2. 外部第三方資源（採取逐個下載，失敗不影響 SW 安裝）
 const EXTERNAL_ASSETS = [
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap',
-  'https://unpkg.com/lucide@latest',
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700;800&display=swap',
+  'https://unpkg.com/lucide@1.70.0/dist/umd/lucide.js',
   'https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js'
 ];
 
@@ -26,9 +26,7 @@ self.addEventListener('install', (event) => {
       // 外部資源使用 Promise.allSettled 逐一快取，就算失敗也不中斷 install
       await Promise.allSettled(
         EXTERNAL_ASSETS.map((url) => 
-          fetch(url, { mode: 'cors' })
-            ? cache.add(url)
-            : Promise.reject()
+          cache.add(url)
         )
       );
     })
