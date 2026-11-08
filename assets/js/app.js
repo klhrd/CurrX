@@ -202,6 +202,24 @@ function attemptFullscreen(e) {
     }
 }
 
+// 清理過期/過多的匯率快取,避免 localStorage 無限累積
+function pruneRateCache() {
+    const now = Date.now();
+    const entries = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('rates_')) {
+            const v = safeParse(k);
+            const ts = (v && typeof v.timestamp === 'number') ? v.timestamp : 0;
+            entries.push({ k, ts });
+        }
+    }
+    entries.sort((a, b) => b.ts - a.ts);
+    entries.forEach((e, i) => {
+        if (i >= 30 || now - e.ts > 604800000) localStorage.removeItem(e.k);
+    });
+}
+
 // Fetch Rates
 async function fetchRates(force = true) {
     if (state.fromCurrency === state.toCurrency) {
@@ -239,6 +257,7 @@ async function fetchRates(force = true) {
             state.exchangeRate = rate;
             state.lastUpdated = Date.now();
             localStorage.setItem(cacheKey, JSON.stringify({ rate, timestamp: state.lastUpdated }));
+            pruneRateCache();
             updateStatus();
         } else {
             throw new Error('路徑解析失敗');
