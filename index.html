@@ -101,12 +101,37 @@
     <div class="menu-overlay" id="menuOverlay">
         <div class="side-menu" id="sideMenu">
             <div class="menu-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div style="font-size:1.5rem; font-weight:700;" data-i18n="settings">Settings</div>
+                <div style="font-size:1.5rem; font-weight:700;" data-i18n="menuTitle">選單</div>
                 <button class="icon-btn" id="closeMenuBtn"><i data-lucide="x"></i></button>
             </div>
             
             <div class="menu-item" id="historyBtn"><i data-lucide="history"></i> <span data-i18n="history">歷史紀錄回溯</span></div>
+
+            <div class="menu-item">
+                <i data-lucide="layout"></i> <span data-i18n="displayMode">顯示語言</span>
+                <select id="displayModeSelect">
+                    <option value="en" data-i18n="dmEn">僅英文</option>
+                    <option value="zh" data-i18n="dmZh">僅中文</option>
+                    <option value="both" data-i18n="dmBoth">兩者併列</option>
+                </select>
+            </div>
+
+            <div class="menu-item" id="shareBtn"><i data-lucide="share-2"></i> <span data-i18n="share">複製與分享</span></div>
             
+            <div class="menu-item" id="openSettingsBtn"><i data-lucide="settings"></i> <span data-i18n="settings">設定</span></div>
+            
+            <div class="menu-footer"><a href="https://github.com/klhrd/CurrX/">CurrX v2.1.6</a></div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="menu-overlay" id="settingsOverlay">
+        <div class="side-menu" id="settingsMenu">
+            <div class="menu-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div style="font-size:1.5rem; font-weight:700;" data-i18n="settings">設定</div>
+                <button class="icon-btn" id="closeSettingsBtn"><i data-lucide="x"></i></button>
+            </div>
+
             <div class="menu-item">
                 <i data-lucide="hash"></i> <span data-i18n="precision">小數點位數</span>
                 <select id="precisionSelect">
@@ -124,15 +149,6 @@
                     <option value="standard" data-i18n="fmtStandard">標準 (1,234,567)</option>
                     <option value="abbrev" data-i18n="fmtAbbrev">簡寫 (1.2M)</option>
                     <option value="scientific" data-i18n="fmtScientific">科學記號 (1.2E+6)</option>
-                </select>
-            </div>
-
-            <div class="menu-item">
-                <i data-lucide="layout"></i> <span data-i18n="displayMode">顯示語言</span>
-                <select id="displayModeSelect">
-                    <option value="en" data-i18n="dmEn">僅英文</option>
-                    <option value="zh" data-i18n="dmZh">僅中文</option>
-                    <option value="both" data-i18n="dmBoth">兩者併列</option>
                 </select>
             </div>
 
@@ -166,9 +182,6 @@
                 <i data-lucide="maximize"></i> <span data-i18n="fullscreen">自動全螢幕</span>
                 <input type="checkbox" id="fullscreenCheckbox" style="width: 20px; height: 20px;">
             </div>
-            <div class="menu-item" id="shareBtn"><i data-lucide="share-2"></i> <span data-i18n="share">複製與分享</span></div>
-            
-            <div class="menu-footer"><a href="https://github.com/klhrd/CurrX/">CurrX v2.1.6</a></div>
         </div>
     </div>
 

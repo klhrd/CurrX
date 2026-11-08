@@ -10,6 +10,7 @@ function safeParse(key) {
 // i18n 字典(介面語言)
 const I18N = {
     en: {
+        menuTitle: 'Menu',
         settings: 'Settings',
         history: 'History Lookup',
         language: 'Language',
@@ -46,6 +47,7 @@ const I18N = {
         copied: 'Copied'
     },
     zh: {
+        menuTitle: '選單',
         settings: '設定',
         history: '歷史紀錄回溯',
         language: '介面語言',
@@ -160,6 +162,10 @@ const elements = {
     closeMenuBtn: document.getElementById('closeMenuBtn'),
     menuOverlay: document.getElementById('menuOverlay'),
     sideMenu: document.getElementById('sideMenu'),
+    openSettingsBtn: document.getElementById('openSettingsBtn'),
+    settingsOverlay: document.getElementById('settingsOverlay'),
+    settingsMenu: document.getElementById('settingsMenu'),
+    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
     fromCurrencyBtn: document.getElementById('fromCurrencyBtn'),
     toCurrencyBtn: document.getElementById('toCurrencyBtn'),
     swapBtn: document.getElementById('swapBtn'),
@@ -573,6 +579,16 @@ elements.menuBtn.addEventListener('click', () => { elements.menuOverlay.style.di
 const closeMenu = () => { elements.sideMenu.classList.remove('active'); setTimeout(() => elements.menuOverlay.style.display = 'none', 300); };
 elements.closeMenuBtn.addEventListener('click', closeMenu);
 elements.menuOverlay.addEventListener('click', (e) => { if (e.target === elements.menuOverlay) closeMenu(); });
+
+// 設定面板(由選單進入)
+elements.openSettingsBtn.addEventListener('click', () => {
+    closeMenu();
+    elements.settingsOverlay.style.display = 'block';
+    setTimeout(() => elements.settingsMenu.classList.add('active'), 10);
+});
+const closeSettings = () => { elements.settingsMenu.classList.remove('active'); setTimeout(() => elements.settingsOverlay.style.display = 'none', 300); };
+elements.closeSettingsBtn.addEventListener('click', closeSettings);
+elements.settingsOverlay.addEventListener('click', (e) => { if (e.target === elements.settingsOverlay) closeSettings(); });
 elements.fromCurrencyBtn.addEventListener('click', () => openPicker('from'));
 elements.toCurrencyBtn.addEventListener('click', () => openPicker('to'));
 elements.closePickerBtn.addEventListener('click', closePicker);
