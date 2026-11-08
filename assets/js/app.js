@@ -7,6 +7,99 @@ function safeParse(key) {
     }
 }
 
+// i18n 字典(介面語言)
+const I18N = {
+    en: {
+        settings: 'Settings',
+        history: 'History Lookup',
+        language: 'Language',
+        precision: 'Decimal Places',
+        p0: '0 places', p1: '1 place', p2: '2 places', p3: '3 places', p4: '4 places',
+        numFormat: 'Number Format',
+        fmtStandard: 'Standard (1,234,567)',
+        fmtAbbrev: 'Abbreviated (1.2M)',
+        fmtScientific: 'Scientific (1.2E+6)',
+        displayMode: 'Currency Names',
+        dmEn: 'Code only',
+        dmZh: 'Chinese only',
+        dmBoth: 'Code + Chinese',
+        theme: 'Color Theme',
+        thSystem: 'System',
+        thLight: 'Light',
+        thDark: 'Dark',
+        apiSource: 'Rate Source',
+        fullscreen: 'Auto Fullscreen',
+        share: 'Copy & Share',
+        pickerTitle: 'Select Currency',
+        searchPlaceholder: 'Search code, Chinese or English...',
+        historyTitle: 'History',
+        clearHistory: 'Clear All Records',
+        noResults: 'No results',
+        noHistory: 'No records',
+        formatError: 'Invalid format',
+        loadingCache: 'Loading cache...',
+        updating: 'Updating rates...',
+        updateFailed: 'Update failed<br>Check network/source',
+        lastUpdate: 'Last updated',
+        justNow: 'just now',
+        minutesAgo: '{n} min ago',
+        copied: 'Copied'
+    },
+    zh: {
+        settings: '設定',
+        history: '歷史紀錄回溯',
+        language: '介面語言',
+        precision: '小數點位數',
+        p0: '0 位', p1: '1 位', p2: '2 位', p3: '3 位', p4: '4 位',
+        numFormat: '數值格式',
+        fmtStandard: '標準 (1,234,567)',
+        fmtAbbrev: '簡寫 (1.2M)',
+        fmtScientific: '科學記號 (1.2E+6)',
+        displayMode: '顯示語言',
+        dmEn: '僅英文',
+        dmZh: '僅中文',
+        dmBoth: '兩者併列',
+        theme: '色彩主題',
+        thSystem: '跟隨系統',
+        thLight: '淺色模式',
+        thDark: '深色模式',
+        apiSource: '匯率來源',
+        fullscreen: '自動全螢幕',
+        share: '複製與分享',
+        pickerTitle: '選擇幣別',
+        searchPlaceholder: '搜尋代碼、中文或英文...',
+        historyTitle: '歷史紀錄',
+        clearHistory: '清除所有紀錄',
+        noResults: '找不到結果',
+        noHistory: '無紀錄',
+        formatError: '格式錯誤',
+        loadingCache: '正在讀取快取...',
+        updating: '正在更新匯率...',
+        updateFailed: '更新失敗<br>請檢查網路/來源',
+        lastUpdate: '最後更新時間',
+        justNow: '剛剛',
+        minutesAgo: '{n} 分鐘前',
+        copied: '已複製'
+    }
+};
+
+function t(key) {
+    return (I18N[state.lang] || I18N.en)[key] || I18N.en[key] || key;
+}
+
+// 套用介面語言至所有標記元素
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const val = t(el.getAttribute('data-i18n'));
+        if (val) el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const val = t(el.getAttribute('data-i18n-placeholder'));
+        if (val) el.placeholder = val;
+    });
+    if (!state.lastUpdated) elements.refreshStatus.innerHTML = t('loadingCache') + '<br>---';
+}
+
 // State Management
 const state = {
     expression: '',
@@ -18,6 +111,7 @@ const state = {
     precision: parseInt(localStorage.getItem('precision')) || 2,
     displayMode: localStorage.getItem('displayMode') || 'en',
     themeMode: localStorage.getItem('themeMode') || 'system',
+    lang: localStorage.getItem('lang') || ((navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en'),
     numFormat: localStorage.getItem('numFormat') || 'standard', // standard, abbrev, scientific
     isFullscreen: localStorage.getItem('isFullscreen') === 'true',
     history: safeParse('history') || [],
@@ -81,6 +175,7 @@ const elements = {
     apiSourceSelect: document.getElementById('apiSourceSelect'),
     displayModeSelect: document.getElementById('displayModeSelect'),
     themeModeSelect: document.getElementById('themeModeSelect'),
+    langSelect: document.getElementById('langSelect'),
     fullscreenCheckbox: document.getElementById('fullscreenCheckbox'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
@@ -100,6 +195,7 @@ const elements = {
 function init() {
     if (window.lucide) lucide.createIcons();
     parseHash(); 
+    applyI18n();
     applyTheme();
     loadSettings();
     updateUI();
@@ -156,6 +252,7 @@ function loadSettings() {
     elements.apiSourceSelect.value = state.apiSource;
     elements.displayModeSelect.value = state.displayMode;
     elements.themeModeSelect.value = state.themeMode;
+    elements.langSelect.value = state.lang;
     elements.fullscreenCheckbox.checked = state.isFullscreen;
 }
 
@@ -167,6 +264,7 @@ function saveSettings() {
     localStorage.setItem('numFormat', state.numFormat);
     localStorage.setItem('displayMode', state.displayMode);
     localStorage.setItem('themeMode', state.themeMode);
+    localStorage.setItem('lang', state.lang);
     localStorage.setItem('isFullscreen', state.isFullscreen);
     localStorage.setItem('history', JSON.stringify(state.history));
 }
@@ -243,7 +341,7 @@ async function fetchRates(force = true) {
     }
 
     elements.refreshBtn.classList.add('animate-spin');
-    elements.refreshStatus.innerHTML = '正在更新匯率...';
+    elements.refreshStatus.innerHTML = t('updating');
 
     try {
         const config = API_CONFIGS[state.apiSource];
@@ -264,7 +362,7 @@ async function fetchRates(force = true) {
         }
     } catch (err) {
         console.error('[Fetch Error]', err);
-        elements.refreshStatus.innerHTML = '更新失敗<br>請檢查網路/來源';
+        elements.refreshStatus.innerHTML = t('updateFailed');
     } finally {
         elements.refreshBtn.classList.remove('animate-spin');
         calculateCurrency();
@@ -274,8 +372,8 @@ async function fetchRates(force = true) {
 function updateStatus() {
     if (!state.lastUpdated) return;
     const diff = Math.floor((Date.now() - state.lastUpdated) / 60000);
-    const timeStr = diff < 1 ? '剛剛' : `${diff} 分鐘前`;
-    elements.refreshStatus.innerHTML = `最後更新時間<br>${timeStr}`;
+    const timeStr = diff < 1 ? t('justNow') : t('minutesAgo').replace('{n}', diff);
+    elements.refreshStatus.innerHTML = `${t('lastUpdate')}<br>${timeStr}`;
 }
 
 // Calculator Logic
@@ -331,7 +429,7 @@ function evaluateExpression(save = false) {
         // 輸入過程中算式不完整時靜默忽略；只有按下 `=` (save=true) 時才提示格式錯誤
         if (save) {
             const originalExp = state.expression;
-            elements.expressionDisplay.innerHTML = '<span style="color:#ff7675">格式錯誤</span>';
+            elements.expressionDisplay.innerHTML = '<span style="color:#ff7675">' + t('formatError') + '</span>';
             setTimeout(() => { if(state.expression === originalExp) updateUI(); }, 1200);
         }
     }
@@ -403,7 +501,7 @@ function renderCurrencyList() {
                 <span style="font-size:0.75rem; opacity:0.6; align-self:center">${esc(data.en || '')}</span>
             </div>
         `;
-    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">找不到結果</div>';
+    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">' + t('noResults') + '</div>';
 }
 
 function openPicker(type) {
@@ -450,7 +548,7 @@ function renderHistory() {
             </div>
         </div>
     `;
-    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">無紀錄</div>';
+    }).join('') || '<div style="text-align:center; padding:40px; opacity:0.5">' + t('noHistory') + '</div>';
 }
 
 window.loadHistoryItem = (id) => {
@@ -511,7 +609,14 @@ elements.clearHistoryBtn.addEventListener('click', () => { state.history = []; s
 elements.shareBtn.addEventListener('click', () => {
     const text = `[CurrX] ${state.expression} = ${state.result} ${state.fromCurrency} -> ${formatNumber(state.result * state.exchangeRate)} ${state.toCurrency}`;
     if (navigator.share) navigator.share({ text }).catch(() => {});
-    else navigator.clipboard.writeText(text).then(() => alert('已複製'));
+    else navigator.clipboard.writeText(text).then(() => alert(t('copied')));
+});
+
+// 介面語言切換
+elements.langSelect.addEventListener('change', (e) => {
+    state.lang = e.target.value;
+    saveSettings();
+    applyI18n();
 });
 
 // 啟動應用程式

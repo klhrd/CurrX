@@ -1,6 +1,7 @@
-# 💱 CurrX - 智能匯率計算機 (v2.1.0)
+# 💱 CurrX - Smart Exchange Rate Calculator (v2.1.6)
 
-> **極簡、美觀且強大的 PWA 匯率計算工具** > 專為行動裝置優化，結合標準計算機靈活度與即時全球匯率轉換。
+> **A minimal, beautiful, and powerful PWA currency converter.**
+> Optimized for mobile devices, combining the flexibility of a standard calculator with real-time global exchange rates.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PWA Ready](https://img.shields.io/badge/PWA-Supported-brightgreen.svg)](manifest.json)
@@ -8,70 +9,85 @@
 
 ---
 
-## ✨ v2.1.0 重大更新與修復 (Release Notes)
+## 🌟 Key Features
 
-- ⚡ **原生 PWA 觸控體驗優化**：修復「全螢幕模式」在 Android / iOS PWA 模式下首擊無效（First Click Blocked）的事件阻斷問題。
-- 🔄 **無縫貨幣對調 (Smart Swap)**：改寫幣別對調邏輯，自動同步更新 URL Hash 並重拉官方 API 精確匯率，避免多次對調後的浮點數累積誤差。
-- 🛡️ **計算引擎錯誤隔離**：即時輸入過程不完整算式（如 `5 +`）採靜默容錯處理，僅於按下 `=` 時提示「格式錯誤」，極大地提升連續輸入順暢度。
-- 🚀 **Service Worker 快取升級**：更新 `sw.js` 至 `currx-v2`，加入自動清空舊版本快取的 `activate` 監聽機制，解決更新後頁面卡在舊版問題。
-- 🌐 **動態 URL Hash 導航**：支援網址直接代入幣別（如 `#USD-TWD`），方便分享或建立捷徑。
+### 1. 🧮 Smart Calculation Engine
+- Powered by the `math.js` library — supports arithmetic, percentages, parentheses, and chained operations.
+- Real-time evaluation as you type, with results instantly converted to the target currency.
 
----
-
-## 🌟 主要功能亮點
-
-### 1. 🧮 智慧計算引擎
-- 整合 `math.js` 數學庫，支援四則運算、百分比計算與連續運算。
-- 輸入即時計算，結果直觀同步至目標貨幣。
-
-### 2. 🌐 多路 API 匯率備援機制
-內建三大開放匯率 API 來源，當單一來源異常時可隨時切換：
-- **Fawazahmed0 API**（預設，更新頻率高、幣別齊全）
+### 2. 🌐 Multi-Source Rate API Fallback
+Three open exchange-rate APIs are built in — switch anytime if one source goes down:
+- **Fawazahmed0 API** (default: frequently updated, wide currency coverage)
 - **ExchangeRate API**
 - **Frankfurter API**
 
-### 3. 📖 全球幣別字典與極速搜尋
-- 內建超過 100 種常用法定貨幣與加密貨幣字典 (`currencies.js`)。
-- 支援**代碼 (USD)**、**中文 (美金)** 與 **英文 (US Dollar)** 的多語系關鍵字即時過濾。
+### 3. 📖 Global Currency Dictionary with Instant Search
+- Over 100 fiat and crypto currencies built in (`currencies.js`).
+- Instant filtering by **code (USD)**, **Chinese (美金)**, or **English (US Dollar)**.
 
-### 4. 📱 離線與 PWA (Progressive Web App) 支援
-- 支援離線快取，無網路狀態下仍可使用上次快取匯率進行計算。
-- 可直接「新增至主畫面」作為原生 App 使用，支援全螢幕與無縫導航列體驗。
+### 4. 🌍 Bilingual UI (i18n)
+- Interface language switchable between **English** and **Chinese (繁體中文)** from the settings menu.
+- Preference is persisted in `localStorage` and auto-detected from the browser language on first visit.
 
-### 5. 📜 歷史紀錄與分享
-- 自動記錄近 20 筆計算結果與當時採用的匯率。
-- 點擊歷史卡片即可一鍵還原算式與幣別組合。
-- 一鍵複製與調用系統原生 Web Share API 快速分享計算結果。
+### 5. 📱 Offline & PWA (Progressive Web App) Support
+- Offline caching: keep calculating with the last cached rates even without a network.
+- "Add to Home Screen" installs it like a native app, with fullscreen and seamless navigation.
+
+### 6. 📜 History & Sharing
+- Automatically records the last 20 calculations along with the rates used at the time.
+- Tap any history card to instantly restore the expression and currency pair.
+- One-tap copy and native Web Share API support for sharing results.
 
 ---
 
-## 🛠️ 技術堆疊 (Tech Stack)
+## 🛠️ Tech Stack
 
-- **前端核心**：原生 HTML5、CSS3 (Flexbox/Grid, Modern CSS Variables)、JavaScript (ES6+)
-- **外掛套件**：
-  - [Math.js](https://mathjs.org/) - 數學算式解析與精確計算
-  - [Lucide Icons](https://lucide.dev/) - 極簡圖標庫
+- **Core**: Vanilla HTML5, CSS3 (Flexbox/Grid, modern CSS variables), JavaScript (ES6+)
+- **Libraries**:
+  - [Math.js](https://mathjs.org/) - expression parsing and precise calculation
+  - [Lucide Icons](https://lucide.dev/) - minimal icon set
   - [Google Fonts](https://fonts.google.com/) - Poppins & Noto Sans TC
-- **PWA 規範**：Service Worker (Cache First Strategy) & Web App Manifest
+- **PWA**: Service Worker (cache-first strategy with core/external asset separation) & Web App Manifest
+- **Security**: Content-Security-Policy, Subresource Integrity (SRI) on third-party scripts, HTML escaping, strict `connect-src` API allowlist
 
 ---
 
-## 📂 專案檔案結構
+## 📂 Project Structure
 
 ```text
 CurrX/
-├── index.html              # 應用程式主結構與 Overlay 模組
-├── manifest.json           # PWA 設定檔 (應用程式名稱、圖示與顯示模式)
-├── sw.js                   # Service Worker (離線快取與版本控管)
-├── LICENSE                 # MIT 開源授權條款
-├── README.md               # 專案說明文件
+├── index.html              # App shell and overlay modules
+├── manifest.json           # PWA manifest (app name, icons, display mode)
+├── sw.js                   # Service Worker (offline cache & versioning)
+├── LICENSE                 # MIT License
+├── README.md               # This file
 └── assets/
     ├── css/
-    │   └── style.css       # 全局樣式、主題變數與 UI 切換動畫
+    │   └── style.css       # Global styles, theme variables, UI transitions
     ├── js/
-    │   ├── app.js          # 應用程式主邏輯 (State, Calc, Events, Render)
-    │   └── currencies.js   # 全球幣別字典 (代碼、中文與英文映射)
+    │   ├── app.js          # Main logic (state, i18n, calc, events, render)
+    │   └── currencies.js   # Currency dictionary (code, Chinese & English names)
     └── icons/
-        ├── icon-192.png    # PWA 圖示 (192x192)
-        ├── icon-512.png    # PWA 圖示 (512x512)
-        └── icon-1024.png   # PWA 高畫質圖示
+        ├── icon-192.png    # PWA icon (192x192)
+        ├── icon-512.png    # PWA icon (512x512)
+        └── icon-1024.png   # PWA icon (1024x1024)
+```
+
+---
+
+## 🚀 Getting Started
+
+No build step required — it is a fully static site.
+
+1. Clone the repository.
+2. Serve the folder over HTTPS (required for Service Worker / PWA), e.g.:
+   ```bash
+   npx serve .
+   ```
+3. Open the served URL in a browser, or deploy to GitHub Pages / any static host.
+
+---
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).
