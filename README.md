@@ -1,4 +1,4 @@
-# 💱 CurrX - Smart Exchange Rate Calculator (v2.1.6)
+# 💱 CurrX - Smart Exchange Rate Calculator (v2.2.0)
 
 > **A minimal, beautiful, and powerful PWA currency converter.**
 > Optimized for mobile devices, combining the flexibility of a standard calculator with real-time global exchange rates.

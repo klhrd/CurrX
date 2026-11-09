@@ -13,6 +13,8 @@ const I18N = {
         menuTitle: 'Menu',
         settings: 'Settings',
         history: 'History Lookup',
+        multiToggle: 'Multi-Currency View',
+        multiError: 'Rates unavailable',
         language: 'Language',
         precision: 'Decimal Places',
         p0: '0 places', p1: '1 place', p2: '2 places', p3: '3 places', p4: '4 places',
@@ -50,6 +52,8 @@ const I18N = {
         menuTitle: '選單',
         settings: '設定',
         history: '歷史紀錄回溯',
+        multiToggle: '多幣別一覽',
+        multiError: '匯率無法取得',
         language: '介面語言',
         precision: '小數點位數',
         p0: '0 位', p1: '1 位', p2: '2 位', p3: '3 位', p4: '4 位',
@@ -116,15 +120,30 @@ const state = {
     lang: localStorage.getItem('lang') || ((navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en'),
     numFormat: localStorage.getItem('numFormat') || 'standard', // standard, abbrev, scientific
     isFullscreen: localStorage.getItem('isFullscreen') === 'true',
+    showMulti: localStorage.getItem('showMulti') === 'true',
     history: safeParse('history') || [],
     lastUpdated: localStorage.getItem('lastUpdated') || null,
     pickingFor: null,
-    searchQuery: ''
+    searchQuery: '',
+    multiRates: null,
+    multiTargets: (() => {
+        const m = safeParse('multiTargets');
+        return (Array.isArray(m) && m.length && m.every(c => typeof c === 'string')) ? m : [localStorage.getItem('toCurrency') || 'TWD'];
+    })()
 };
 
 // 安全取得幣別字典列表
 const CURRENCY_LIST_CODES = typeof CURRENCY_DICT !== 'undefined' ? Object.keys(CURRENCY_DICT) : [];
 if (!Array.isArray(state.history)) state.history = [];
+if (state.multiTargets[0] !== state.toCurrency) {
+    state.multiTargets = [state.toCurrency, ...state.multiTargets.filter(c => c !== state.toCurrency)];
+}
+
+// 設定主要目標幣別並同步多幣別列表順序
+function setPrimaryTarget(code) {
+    state.toCurrency = code;
+    state.multiTargets = [code, ...state.multiTargets.filter(c => c !== code)];
+}
 
 // HTML 跳脫,防止 XSS
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '\u0026amp;', '<': '\u0026lt;', '>': '\u0026gt;', '"': '\u0026quot;', "'": '\u0026#39;' }[c]));
@@ -183,6 +202,9 @@ const elements = {
     themeModeSelect: document.getElementById('themeModeSelect'),
     langSelect: document.getElementById('langSelect'),
     fullscreenCheckbox: document.getElementById('fullscreenCheckbox'),
+    multiCurrencyCheckbox: document.getElementById('multiCurrencyCheckbox'),
+    multiRows: document.getElementById('multiRows'),
+    chipRow: document.getElementById('chipRow'),
     historyBtn: document.getElementById('historyBtn'),
     historyOverlay: document.getElementById('historyOverlay'),
     historyContent: document.getElementById('historyContent'),
@@ -239,7 +261,7 @@ function parseHash() {
     if (parts.length === 2) {
         if (typeof CURRENCY_DICT !== 'undefined') {
             if (CURRENCY_DICT[parts[0]]) state.fromCurrency = parts[0];
-            if (CURRENCY_DICT[parts[1]]) state.toCurrency = parts[1];
+            if (CURRENCY_DICT[parts[1]]) setPrimaryTarget(parts[1]);
         }
     }
 }
@@ -260,6 +282,7 @@ function loadSettings() {
     elements.themeModeSelect.value = state.themeMode;
     elements.langSelect.value = state.lang;
     elements.fullscreenCheckbox.checked = state.isFullscreen;
+    elements.multiCurrencyCheckbox.checked = state.showMulti;
 }
 
 function saveSettings() {
@@ -272,6 +295,8 @@ function saveSettings() {
     localStorage.setItem('themeMode', state.themeMode);
     localStorage.setItem('lang', state.lang);
     localStorage.setItem('isFullscreen', state.isFullscreen);
+    localStorage.setItem('showMulti', state.showMulti);
+    localStorage.setItem('multiTargets', JSON.stringify(state.multiTargets));
     localStorage.setItem('history', JSON.stringify(state.history));
 }
 
@@ -331,6 +356,7 @@ async function fetchRates(force = true) {
         state.lastUpdated = Date.now();
         updateStatus();
         calculateCurrency();
+        fetchMultiRates();
         return;
     }
 
@@ -372,6 +398,7 @@ async function fetchRates(force = true) {
     } finally {
         elements.refreshBtn.classList.remove('animate-spin');
         calculateCurrency();
+        fetchMultiRates();
     }
 }
 
@@ -380,6 +407,86 @@ function updateStatus() {
     const diff = Math.floor((Date.now() - state.lastUpdated) / 60000);
     const timeStr = diff < 1 ? t('justNow') : t('minutesAgo').replace('{n}', diff);
     elements.refreshStatus.innerHTML = `${t('lastUpdate')}<br>${timeStr}`;
+}
+
+// 多幣別一覽(堆疊於目標貨幣下方)
+// 統一匯率表鍵值為大寫並過濾非數值(fawazahmed 回傳小寫鍵)
+function normRates(raw) {
+    const out = {};
+    if (raw && typeof raw === 'object') {
+        Object.keys(raw).forEach((k) => {
+            const v = Number(raw[k]);
+            if (!isNaN(v)) out[k.toUpperCase()] = v;
+        });
+    }
+    return out;
+}
+
+async function fetchMultiRates() {
+    if (!state.showMulti) return;
+    const from = state.fromCurrency;
+    const cacheKey = `ratesall_${from}_${state.apiSource}`;
+    const cached = safeParse(cacheKey);
+
+    if (cached && cached.rates && typeof cached.rates === 'object' && Date.now() - cached.timestamp < 3600000) {
+        const norm = normRates(cached.rates);
+        if (Object.keys(norm).length) {
+            state.multiRates = norm;
+            renderMultiRates();
+            return;
+        }
+    }
+
+    try {
+        let url, extract;
+        if (state.apiSource === 'fawazahmed') {
+            url = API_CONFIGS.fawazahmed.url(from);
+            extract = (d) => d && d[from.toLowerCase()];
+        } else if (state.apiSource === 'exchangerate') {
+            url = API_CONFIGS.exchangerate.url(from);
+            extract = (d) => d && d.rates;
+        } else {
+            url = `https://api.frankfurter.app/latest?from=${from}`;
+            extract = (d) => d && d.rates;
+        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const rates = normRates(extract(await response.json()));
+        if (!Object.keys(rates).length) throw new Error('parse failed');
+        state.multiRates = rates;
+        localStorage.setItem(cacheKey, JSON.stringify({ rates, timestamp: Date.now() }));
+        renderMultiRates();
+    } catch (err) {
+        console.warn('[CurrX] multi rates fetch failed:', err.message);
+        if (cached && cached.rates) {
+            const norm = normRates(cached.rates);
+            if (Object.keys(norm).length) {
+                state.multiRates = norm;
+                renderMultiRates();
+            }
+        }
+    }
+}
+
+function renderMultiRates() {
+    if (!state.showMulti || !state.multiRates) {
+        if (state.showMulti) {
+            elements.multiRows.innerHTML = '<div class="res-unit" style="opacity:0.5;">...</div>';
+            console.debug('[CurrX] multi rows pending: toggle on but rates not loaded');
+        } else {
+            elements.multiRows.innerHTML = '';
+        }
+        return;
+    }
+    const rates = state.multiRates;
+    elements.multiRows.innerHTML = state.multiTargets
+        .filter(c => c !== state.fromCurrency && c !== state.toCurrency && typeof rates[c] === 'number')
+        .map(c => `
+            <div class="res-row multi-res">
+                <span class="res-val">${esc(formatNumber(state.result * rates[c]))}</span>
+                <span class="res-unit">${esc(c)}</span>
+            </div>
+        `).join('');
 }
 
 // Calculator Logic
@@ -445,6 +552,7 @@ function evaluateExpression(save = false) {
 function calculateCurrency() {
     elements.fromValDisplay.innerText = formatNumber(state.result);
     elements.toValDisplay.innerText = formatNumber(state.result * state.exchangeRate);
+    renderMultiRates();
     
     requestAnimationFrame(() => {
         const results = document.querySelector('.results');
@@ -498,8 +606,9 @@ function renderCurrencyList() {
 
     elements.currencyList.innerHTML = filteredCodes.map(code => {
         const data = CURRENCY_DICT[code];
+        const isSel = state.pickingFor === 'to' && state.multiTargets.includes(code);
         return `
-            <div class="currency-list-item" data-code="${esc(code)}">
+            <div class="currency-list-item${isSel ? ' selected' : ''}" data-code="${esc(code)}">
                 <div style="display:flex; flex-direction:column">
                     <span style="font-weight:700">${esc(code)}</span>
                     <span style="font-size:0.75rem; opacity:0.6">${esc(data.zh || '')}</span>
@@ -514,6 +623,7 @@ function openPicker(type) {
     state.pickingFor = type;
     state.searchQuery = '';
     elements.currencySearch.value = '';
+    renderChips();
     renderCurrencyList();
     elements.pickerOverlay.style.display = 'block';
     setTimeout(() => elements.pickerContent.classList.add('active'), 10);
@@ -526,13 +636,84 @@ const closePicker = () => {
 };
 
 window.selectCurrency = (code) => {
-    if (state.pickingFor === 'from') state.fromCurrency = code;
-    else state.toCurrency = code;
+    if (state.pickingFor === 'from') {
+        state.fromCurrency = code;
+        saveSettings();
+        updateUI();
+        fetchRates(true);
+        closePicker();
+        return;
+    }
+    // 目標幣別多選:切換加入/移除,維持選擇器開啟
+    const idx = state.multiTargets.indexOf(code);
+    if (idx >= 0) {
+        if (state.multiTargets.length <= 1) return; // 至少保留一個目標
+        state.multiTargets.splice(idx, 1);
+    } else {
+        state.multiTargets.push(code);
+    }
+    state.toCurrency = state.multiTargets[0];
     saveSettings();
     updateUI();
     fetchRates(true);
-    closePicker();
+    renderChips();
+    renderCurrencyList();
 };
+
+// 目標幣別晶片(並列顯示、拖曳排序)
+function renderChips() {
+    if (state.pickingFor !== 'to') {
+        elements.chipRow.style.display = 'none';
+        return;
+    }
+    elements.chipRow.style.display = 'flex';
+    elements.chipRow.innerHTML = state.multiTargets.map((c, i) =>
+        `<div class="chip${i === 0 ? ' primary' : ''}" data-code="${esc(c)}">${esc(c)}</div>`
+    ).join('');
+}
+
+(function setupChipDrag() {
+    let dragChip = null;
+    elements.chipRow.addEventListener('pointerdown', (e) => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        dragChip = chip;
+        let moved = false;
+
+        const onMove = (ev) => {
+            if (!dragChip) return;
+            moved = true;
+            dragChip.classList.add('dragging');
+            const target = document.elementFromPoint(ev.clientX, ev.clientY);
+            const overChip = target && target.closest('.chip');
+            if (overChip && overChip !== dragChip) {
+                const rect = overChip.getBoundingClientRect();
+                const before = (ev.clientX < rect.left + rect.width / 2) || (ev.clientY < rect.top + rect.height / 2);
+                elements.chipRow.insertBefore(dragChip, before ? overChip : overChip.nextSibling);
+            }
+            ev.preventDefault();
+        };
+        const onUp = () => {
+            if (dragChip) {
+                dragChip.classList.remove('dragging');
+                if (moved) {
+                    state.multiTargets = Array.from(elements.chipRow.querySelectorAll('.chip')).map(c => c.dataset.code);
+                    state.toCurrency = state.multiTargets[0];
+                    saveSettings();
+                    updateUI();
+                    fetchRates(true);
+                    renderChips();
+                    renderCurrencyList();
+                }
+            }
+            dragChip = null;
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    });
+})();
 
 // History
 function addToHistory(exp, res) {
@@ -563,7 +744,7 @@ window.loadHistoryItem = (id) => {
         state.expression = item.res.toString();
         state.result = item.res;
         state.fromCurrency = item.from;
-        state.toCurrency = item.to;
+        setPrimaryTarget(item.to);
         state.exchangeRate = item.rate;
         state.apiSource = item.api || state.apiSource;
         updateUI();
@@ -606,7 +787,10 @@ elements.historyList.addEventListener('click', (e) => {
 
 // 修正：Swap 正確觸發 Hash 更新並拉取完整匯率
 elements.swapBtn.addEventListener('click', () => { 
-    [state.fromCurrency, state.toCurrency] = [state.toCurrency, state.fromCurrency]; 
+    const primary = state.multiTargets[0] || state.toCurrency;
+    state.multiTargets = [state.fromCurrency, ...state.multiTargets.slice(1).filter(c => c !== state.fromCurrency)];
+    state.fromCurrency = primary;
+    state.toCurrency = state.multiTargets[0];
     saveSettings();
     updateUI(); 
     fetchRates(true); 
@@ -615,9 +799,15 @@ elements.swapBtn.addEventListener('click', () => {
 elements.precisionSelect.addEventListener('change', (e) => { state.precision = parseInt(e.target.value); saveSettings(); calculateCurrency(); });
 elements.numFormatSelect.addEventListener('change', (e) => { state.numFormat = e.target.value; saveSettings(); calculateCurrency(); });
 elements.apiSourceSelect.addEventListener('change', (e) => { state.apiSource = e.target.value; saveSettings(); fetchRates(true); });
-elements.displayModeSelect.addEventListener('change', (e) => { state.displayMode = e.target.value; saveSettings(); updateUI(); });
+elements.displayModeSelect.addEventListener('change', (e) => { state.displayMode = e.target.value; saveSettings(); updateUI(); renderMultiRates(); });
 elements.themeModeSelect.addEventListener('change', (e) => { state.themeMode = e.target.value; saveSettings(); applyTheme(); });
 elements.fullscreenCheckbox.addEventListener('change', (e) => { state.isFullscreen = e.target.checked; saveSettings(); if (state.isFullscreen) attemptFullscreen(); });
+elements.multiCurrencyCheckbox.addEventListener('change', (e) => {
+    state.showMulti = e.target.checked;
+    saveSettings();
+    renderMultiRates();
+    if (state.showMulti && !state.multiRates) fetchMultiRates();
+});
 elements.historyBtn.addEventListener('click', () => { closeMenu(); elements.historyOverlay.style.display = 'flex'; setTimeout(() => elements.historyContent.classList.add('active'), 10); });
 const closeHistory = () => { elements.historyContent.classList.remove('active'); setTimeout(() => elements.historyOverlay.style.display = 'none', 300); };
 elements.closeHistoryBtn.addEventListener('click', closeHistory);

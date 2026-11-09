@@ -158,6 +158,27 @@ header {
 .res-row.primary .res-val { font-size: clamp(2rem, 12vw, 3.8rem); font-weight: 700; color: var(--accent-color); }
 .res-row.primary .res-unit { font-size: 1.1rem; color: var(--accent-color); }
 
+/* Multi-Target Rows (stacked under primary) */
+#multiRows {
+    width: 100%; max-height: 26vh; overflow-y: auto;
+    display: flex; flex-direction: column; align-items: flex-end;
+    direction: ltr;
+}
+.res-row.multi-res .res-val { font-size: clamp(1.1rem, 5vw, 1.6rem); font-weight: 600; color: var(--text-main); }
+.res-row.multi-res .res-unit { font-size: 0.8rem; }
+
+/* Picker Chips (multi-select, drag to reorder) */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--card-bg); border-radius: 12px;
+    padding: 6px 12px; font-size: 0.75rem; font-weight: 700;
+    cursor: grab; touch-action: none; user-select: none;
+}
+.chip.primary { outline: 2px solid var(--accent-color); }
+.chip.dragging { opacity: 0.55; cursor: grabbing; }
+.currency-list-item.selected { background: var(--btn-active); }
+
 /* Keypad */
 .keypad {
     display: grid;
