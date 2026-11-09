@@ -1,4 +1,4 @@
-const CACHE_NAME = 'currx-v8';
+const CACHE_NAME = 'currx-v11';
 
 // 1. 本地核心檔案（這些必須 100% 成功）
 const CORE_ASSETS = [

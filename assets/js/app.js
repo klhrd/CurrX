@@ -369,6 +369,7 @@ async function fetchRates(force = true) {
         state.lastUpdated = cachedData.timestamp;
         updateStatus();
         calculateCurrency();
+        fetchMultiRates();
         return;
     }
 

@@ -90,7 +90,7 @@ header {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    padding-top: 10px;
+    padding: 0;
     flex-grow: 1;
     justify-content: space-around;
 }
@@ -159,13 +159,18 @@ header {
 .res-row.primary .res-unit { font-size: 1.1rem; color: var(--accent-color); }
 
 /* Multi-Target Rows (stacked under primary) */
+/* 單一網格:金額欄右對齊、幣別欄自適應最寬碼,無固定死區 */
 #multiRows {
     width: 100%; max-height: 26vh; overflow-y: auto;
-    display: flex; flex-direction: column; align-items: flex-end;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+    align-items: baseline;
     direction: ltr;
 }
-.res-row.multi-res .res-val { font-size: clamp(1.1rem, 5vw, 1.6rem); font-weight: 600; color: var(--text-main); }
-.res-row.multi-res .res-unit { font-size: 0.8rem; }
+.res-row.multi-res { display: contents; }
+.res-row.multi-res .res-val { font-size: clamp(1.1rem, 5vw, 1.6rem); font-weight: 600; color: var(--text-main); justify-self: end; }
+.res-row.multi-res .res-unit { font-size: 0.8rem; margin-left: 0; }
 
 /* Picker Chips (multi-select, drag to reorder) */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
